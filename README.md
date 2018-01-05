@@ -9,10 +9,12 @@ Dependencies
 
 Building
 --------
-  * To build & install the project, run the following from this project's root
+To build & install the project, run the following from this project's root
 directory:
-    * mkdir build
-    * cd build
-    * cmake ..
-    * make
-    * make install
+```bash
+mkdir build
+cd build
+cmake ..
+make
+make install
+```
