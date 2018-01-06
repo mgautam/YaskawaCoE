@@ -16,6 +16,7 @@ include_directories(SOEM/soem)
 include_directories(SOEM/osal)
 include_directories(SOEM/osal/${OS})
 include_directories(SOEM/oshw/${OS})
+include_directories(ycoe)
 
 # build the SOEM driver
 add_subdirectory(SOEM)
@@ -23,7 +24,10 @@ add_subdirectory(SOEM)
 # build the executable
 #include_directories(SOEM)
 #link_directories(SOEM)
-add_executable(yaskawaCoE yaskawacoe.c)
+file(GLOB YCOE_SOURCES ycoe/*.c)
+add_executable(yaskawaCoE 
+  ${YCOE_SOURCES}
+  yaskawacoe.c)
 
 # link the object file with the soem library
 target_link_libraries(yaskawaCoE soem)
