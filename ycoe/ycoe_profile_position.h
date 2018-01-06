@@ -13,6 +13,12 @@ enum {
   CW_PPM_HALT   = 0x100 /* Stop axis according to halt option code (605Dh) */
 } cw_ppm_bits68; /* Control Word Profile position mode bits 6 & 8 */
 
+enum {
+  SW_TARGET_REACHED = 0x0400,
+  SW_SETPOINT_ACK   = 0x1000,
+  SW_FOLLOWING_ERR  = 0x2000
+} sw_ppm_bits1013;
+
 int ycoe_get_profile_position_parameters(void);
 
 int ycoe_set_profile_velocity (UDINT profile_velocity);

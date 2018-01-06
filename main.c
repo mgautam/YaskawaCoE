@@ -71,6 +71,7 @@ void coeController(char *ifname)
             printf("Request operational state for all slaves\n");
             expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
             printf("Calculated workcounter %d\n", expectedWKC);
+
             ec_slave[0].state = EC_STATE_OPERATIONAL;
             /* send one valid process data to make outputs in slaves happy*/
             ec_send_processdata();
@@ -93,7 +94,8 @@ void coeController(char *ifname)
                 /* cyclic loop */
                 for(i = 1; i <= 10000; i++)
                 {
-		                if (i<10) ec_slave[0].outputs[0] = CW_SHUTDOWN;
+		                if (i<10) //ec_slave[0].outputs[0] = CW_SHUTDOWN;
+                      ycoe_setcontrolword(CW_SHUTDOWN);
                     else if (i<20) ec_slave[0].outputs[0] = CW_SWITCHON;
 		                else if (i<30) {
 			                  ec_slave[0].outputs[0] = CW_ENABLEOP;
