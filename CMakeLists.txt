@@ -27,7 +27,7 @@ add_subdirectory(SOEM)
 file(GLOB YCOE_SOURCES ycoe/*.c)
 add_executable(yaskawaCoE 
   ${YCOE_SOURCES}
-  yaskawacoe.c)
+  main.c)
 
 # link the object file with the soem library
 target_link_libraries(yaskawaCoE soem)

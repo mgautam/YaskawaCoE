@@ -46,12 +46,6 @@ void coeController(char *ifname)
             ec_config_map(&IOmap);
             printf("Slaves mapped, state to SAFE_OP requested.\n");
 
-            uint8 sintbuff; /* sint or usint buffer */
-          	uint32 dintbuff; /* dint or udint buffer */
-          	int sintsize, dintsize;
-            sintsize = sizeof(uint8);
-          	dintsize = sizeof(dintbuff);
-
             /* Configure Distributed Clock mechanism */
             ec_configdc();
 
@@ -99,17 +93,17 @@ void coeController(char *ifname)
                 /* cyclic loop */
                 for(i = 1; i <= 10000; i++)
                 {
-		                if (i<10) ec_slave[0].outputs[0] = 0x6; //shutdown
-		                else if (i<20) ec_slave[0].outputs[0] = 0x7; //switchon
+		                if (i<10) ec_slave[0].outputs[0] = CW_SHUTDOWN;
+                    else if (i<20) ec_slave[0].outputs[0] = CW_SWITCHON;
 		                else if (i<30) {
-			                  ec_slave[0].outputs[0] = 0xF; //switchon+enableoperation
+			                  ec_slave[0].outputs[0] = CW_ENABLEOP;
 			                  ec_slave[0].outputs[2] = 0xFF; //targetposition
 			                  ec_slave[0].outputs[3] = 0xFF;
 			                  ec_slave[0].outputs[4] = 0xFF;
                     }
-		                else if (i<40) ec_slave[0].outputs[0] = 0x2F; //switchon+enableoperation+startnextposition
-		                else if (i<50) ec_slave[0].outputs[0] = 0x3F; //switchon+enableoperation+startnextpositionimmediately
-		                else if (i<60) ec_slave[0].outputs[0] = 0x2F; //switchon+enableoperation+startnextposition
+		                else if (i<40) ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI1; //startnextposition
+		                else if (i<50) ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI2; //startnextpositionimmediately
+		                else if (i<60) ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI1; //startnextposition
 		                //else ec_slave[0].outputs[0] = 0x0;
 
                     ec_send_processdata();
