@@ -71,10 +71,8 @@ void coeController(char *ifname)
 
 	          /* Check & Set Profile Position Mode Parameters */
             ycoe_get_profile_position_parameters();
-            sintbuff = 1;
-          	ec_SDOwrite(1,0x6060,0,0,sintsize,&sintbuff,EC_TIMEOUTRXM);
-           	dintbuff = 502400;
-          	ec_SDOwrite(1,0x6081,0,0,dintsize,&dintbuff,EC_TIMEOUTRXM);
+            ycoe_set_mode_of_operation(PROFILE_POSITION_MODE);
+            ycoe_set_profile_velocity(502400);
 
             printf("Request operational state for all slaves\n");
             expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
