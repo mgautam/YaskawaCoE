@@ -7,6 +7,10 @@ Dependencies
  * CMake 2.8.0 or later
  * Xilinx SDK 2017.3
 
+Build Status
+------------
+[![Build Status](https://travis-ci.org/mgautam/YaskawaCoE.svg?branch=master)](https://travis-ci.org/mgautam/YaskawaCoE)
+
 Building
 --------
 To build & install the project, run the following from this project's root

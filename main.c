@@ -12,6 +12,7 @@
 #include <inttypes.h>
 
 #include "ethercat.h"
+#include "yaskawacoe.h"
 
 #define EC_TIMEOUTMON 500
 
@@ -45,12 +46,6 @@ void coeController(char *ifname)
             ec_config_map(&IOmap);
             printf("Slaves mapped, state to SAFE_OP requested.\n");
 
-            uint8 sintbuff; /* sint or usint buffer */
-          	uint32 dintbuff; /* dint or udint buffer */
-          	int sintsize, dintsize;
-            sintsize = sizeof(uint8);
-          	dintsize = sizeof(dintbuff);
-
             /* Configure Distributed Clock mechanism */
             ec_configdc();
 
@@ -69,29 +64,9 @@ void coeController(char *ifname)
             printf("segments : %d : %d %d %d %d\n",ec_group[0].nsegments ,ec_group[0].IOsegment[0],ec_group[0].IOsegment[1],ec_group[0].IOsegment[2],ec_group[0].IOsegment[3]);
 
 	          /* Check & Set Profile Position Mode Parameters */
-            sintbuff = 1;
-          	ec_SDOwrite(1,0x6060,0,0,sintsize,&sintbuff,EC_TIMEOUTRXM);
-          	ec_SDOread(1,0x6060,0,0,&sintsize,&sintbuff,EC_TIMEOUTRXM);
-          	printf("Mode of Operation set to %d\r\n",sintbuff);
-          	ec_SDOread(1,0x6061,0,0,&sintsize,&sintbuff,EC_TIMEOUTRXM);
-          	printf("Mode of Operation Display: %d\r\n",sintbuff);
-
-        	  ec_SDOread(1,0x6081,0,0,&dintsize,&dintbuff,EC_TIMEOUTRXM);
-        	  printf("Default Profile Velocity: %x [vel. units](incs/sec)\r\n",dintbuff);
-          	dintbuff = 502400;
-          	ec_SDOwrite(1,0x6081,0,0,dintsize,&dintbuff,EC_TIMEOUTRXM);
-          	ec_SDOread(1,0x6081,0,0,&dintsize,&dintbuff,EC_TIMEOUTRXM);
-          	printf("Profile Velocity set to %d [vel. units](incs/sec)\r\n",dintbuff);
-        	  ec_SDOread(1,0x607F,0,0,&dintsize,&dintbuff,EC_TIMEOUTRXM);
-	          printf("Default Max Profile Velocity: %d [vel. units](incs/sec)\r\n",dintbuff);
-	          ec_SDOread(1,0x6083,0,0,&dintsize,&dintbuff,EC_TIMEOUTRXM);
-	          printf("Default Profile Acceleration: %d [acc. units](incs/sec2)\r\n",dintbuff);
-	          ec_SDOread(1,0x6084,0,0,&dintsize,&dintbuff,EC_TIMEOUTRXM);
-	          printf("Default Profile Deceleration: %d [acc. units](incs/sec2)\r\n",dintbuff);
-	          ec_SDOread(1,0x6085,0,0,&dintsize,&dintbuff,EC_TIMEOUTRXM);
-	          printf("Default Quick Stop Deceleration: %d [acc. units](incs/sec2)\r\n",dintbuff);
-
-
+            ycoe_get_profile_position_parameters();
+            ycoe_set_mode_of_operation(PROFILE_POSITION_MODE);
+            ycoe_set_profile_velocity(502400);
 
             printf("Request operational state for all slaves\n");
             expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
@@ -118,17 +93,17 @@ void coeController(char *ifname)
                 /* cyclic loop */
                 for(i = 1; i <= 10000; i++)
                 {
-		                if (i<10) ec_slave[0].outputs[0] = 0x6; //shutdown
-		                else if (i<20) ec_slave[0].outputs[0] = 0x7; //switchon
+		                if (i<10) ec_slave[0].outputs[0] = CW_SHUTDOWN;
+                    else if (i<20) ec_slave[0].outputs[0] = CW_SWITCHON;
 		                else if (i<30) {
-			                  ec_slave[0].outputs[0] = 0xF; //switchon+enableoperation
+			                  ec_slave[0].outputs[0] = CW_ENABLEOP;
 			                  ec_slave[0].outputs[2] = 0xFF; //targetposition
 			                  ec_slave[0].outputs[3] = 0xFF;
 			                  ec_slave[0].outputs[4] = 0xFF;
                     }
-		                else if (i<40) ec_slave[0].outputs[0] = 0x2F; //switchon+enableoperation+startnextposition
-		                else if (i<50) ec_slave[0].outputs[0] = 0x3F; //switchon+enableoperation+startnextpositionimmediately
-		                else if (i<60) ec_slave[0].outputs[0] = 0x2F; //switchon+enableoperation+startnextposition
+		                else if (i<40) ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI1; //startnextposition
+		                else if (i<50) ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI2; //startnextpositionimmediately
+		                else if (i<60) ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI1; //startnextposition
 		                //else ec_slave[0].outputs[0] = 0x0;
 
                     ec_send_processdata();
