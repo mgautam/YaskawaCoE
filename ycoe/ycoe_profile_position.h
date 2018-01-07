@@ -27,4 +27,5 @@ int ycoe_set_profile_deceleration (UDINT profile_deceleration);
 int ycoe_set_quick_stop_deceleration (UDINT quick_stop_deceleration);
 int ycoe_set_profile_position_parameters (UDINT profile_velocity, UDINT profile_acceleration, UDINT profile_deceleration, UDINT quick_stop_deceleration);
 
+int ycoe_set_slave_position (int slavenum, DINT position);
 #endif

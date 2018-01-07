@@ -95,17 +95,23 @@ void coeController(char *ifname)
                 for(i = 1; i <= 10000; i++)
                 {
 		                if (i<10) //ec_slave[0].outputs[0] = CW_SHUTDOWN;
-                      ycoe_setcontrolword(CW_SHUTDOWN);
-                    else if (i<20) ec_slave[0].outputs[0] = CW_SWITCHON;
+                      ycoe_setcontrolword(1,CW_SHUTDOWN);
+                    else if (i<20) //ec_slave[0].outputs[0] = CW_SWITCHON;
+                      ycoe_setcontrolword(1,CW_SWITCHON);
 		                else if (i<30) {
-			                  ec_slave[0].outputs[0] = CW_ENABLEOP;
-			                  ec_slave[0].outputs[2] = 0xFF; //targetposition
+			                  //ec_slave[0].outputs[0] = CW_ENABLEOP;
+                        ycoe_setcontrolword(1,CW_ENABLEOP);
+			                  /*ec_slave[0].outputs[2] = 0xFF; //targetposition
 			                  ec_slave[0].outputs[3] = 0xFF;
-			                  ec_slave[0].outputs[4] = 0xFF;
+			                  ec_slave[0].outputs[4] = 0xFF;*/
+                        ycoe_set_slave_position (1,0xFFFFFF);
                     }
-		                else if (i<40) ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI1; //startnextposition
-		                else if (i<50) ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI2; //startnextpositionimmediately
-		                else if (i<60) ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI1; //startnextposition
+		                else if (i<40) //ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI1; //startnextposition
+                      ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI1);
+		                else if (i<50) //ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI2; //startnextpositionimmediately
+                      ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI2);
+		                else if (i<60) //ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI1; //startnextposition
+                      ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI1);
 		                //else ec_slave[0].outputs[0] = 0x0;
 
                     ec_send_processdata();
@@ -116,15 +122,12 @@ void coeController(char *ifname)
                         printf("Processdata cycle %4d, WKC %d , O:", i, wkc);
 
                         for(j = 0 ; j < oloop; j++)
-                        {
                             printf(" %2.2x", *(ec_slave[0].outputs + j));
-                        }
 
                         printf(" I:");
                         for(j = 0 ; j < iloop; j++)
-                        {
                             printf(" %2.2x", *(ec_slave[0].inputs + j));
-                        }
+
                         printf(" T:%"PRId64"\r\n",ec_DCtime);
                         needlf = TRUE;
                     }

@@ -47,3 +47,9 @@ int ycoe_set_profile_position_parameters (UDINT profile_velocity, UDINT profile_
 
     return 0;
 }
+
+int ycoe_set_slave_position (int slavenum, DINT position) {
+    DINT *position_pdo_address = (DINT *)(ec_slave[slavenum].outputs+2);
+    *position_pdo_address = position;
+    return 0;
+}
