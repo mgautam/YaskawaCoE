@@ -37,6 +37,6 @@ enum {
 
 
 int ycoe_setcontrolword(int slavenum, UINT controlvalue);
-int ycoe_checkstatus (int slavenum, UINT *targetstatus);
+int ycoe_checkstatus (int slavenum, UINT targetstatus);
 int ycoe_printstatus (int slavenum);
 #endif
