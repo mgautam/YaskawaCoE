@@ -99,42 +99,28 @@ void coeController(char *ifname)
                 {
                     ycoe_printstatus(1);
 
-                    //if (i<10) //ec_slave[0].outputs[0] = CW_SHUTDOWN;
                     if(ycoe_checkstatus(1,SW_SWITCHON_DISABLED))
                       ycoe_setcontrolword(1,CW_SHUTDOWN);
-                    //else if (i<20) //ec_slave[0].outputs[0] = CW_SWITCHON;
                     else if(ycoe_checkstatus(1,SW_RTSO))
                       ycoe_setcontrolword(1,CW_SWITCHON);
-		                //else if (i<30)
                     else if(ycoe_checkstatus(1,SW_SWITCHED_ON))
                     {
-			                  //ec_slave[0].outputs[0] = CW_ENABLEOP;
                         ycoe_setcontrolword(1,CW_ENABLEOP);
-			                  /*ec_slave[0].outputs[2] = 0xFF; //targetposition
-			                  ec_slave[0].outputs[3] = 0xFF;
-			                  ec_slave[0].outputs[4] = 0xFF;*/
                         ycoe_set_slave_position (1,0xFFFFFF);
                     }
-		                //else if (i<40) //ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI1; //startnextposition
                     else {
                       if (ycoe_checkstatus(1,SW_OP_ENABLED))
                       {
-
                         if (ycoe_ppm_checkcontrol(1, CW_PPM_SNPI2) && \
                             ycoe_ppm_checkstatus(1,SW_SETPOINT_ACK)) {
                           pos_cmd_sem--;
                           ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI1);
                         }
-                        //else if (i<50) //ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI2; //startnextpositionimmediately
                         else if ((pos_cmd_sem>0) && ycoe_ppm_checkcontrol(1, CW_PPM_SNPI1))
                           ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI2);
                         else if (pos_cmd_sem>0)// Only in PP mode, this means CW = 0x0F
                           ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI1);
                       }
-                      //else if (i<60) //ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI1; //startnextposition
-                      //else if (ycoe_ppm_checkstatus(1,SW_SETPOINT_ACK))
-                      //ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI1);
-                      //else ec_slave[0].outputs[0] = 0x0;
                     }
 
                     ec_send_processdata();
@@ -142,7 +128,7 @@ void coeController(char *ifname)
 
                     if(wkc >= expectedWKC)
                     {
-                      printf("PDO cycle %4d, WKC %d , T:%"PRId64"\r\n", i, wkc, ec_DCtime);
+                      printf("PDO cycle %4d, WKC %d , T:%"PRId64"\n", i, wkc, ec_DCtime);
                       needlf = TRUE;
 
                       printf(" O:");
