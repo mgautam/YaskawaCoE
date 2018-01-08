@@ -9,16 +9,32 @@ enum {
 } cw_ppm_bits459; /* Control Word Profile Position mode bits 4,5 & 9 */
 
 enum {
+  CW_PPM_MASK_SNPATR = 0x70,
+  CW_PPM_MASK_SNPI   = 0x30
+} cw_ppm_mask_bits459; /*Control Word Profile Position mode Masks bits 4,5 & 9 */
+
+enum {
   CW_PPM_RELPOS = 0x40, /* Target position is relative value */
   CW_PPM_HALT   = 0x100 /* Stop axis according to halt option code (605Dh) */
 } cw_ppm_bits68; /* Control Word Profile position mode bits 6 & 8 */
 
-int ycoe_get_profile_position_parameters(void);
+enum {
+  SW_TARGET_REACHED = 0x0400,
+  SW_SETPOINT_ACK   = 0x1000,
+  SW_FOLLOWING_ERR  = 0x2000
+} sw_ppm_bits1013;
 
-int ycoe_set_profile_velocity (UDINT profile_velocity);
-int ycoe_set_profile_acceleration (UDINT profile_acceleration);
-int ycoe_set_profile_deceleration (UDINT profile_deceleration);
-int ycoe_set_quick_stop_deceleration (UDINT quick_stop_deceleration);
-int ycoe_set_profile_position_parameters (UDINT profile_velocity, UDINT profile_acceleration, UDINT profile_deceleration, UDINT quick_stop_deceleration);
 
+int ycoe_ppm_checkcontrol (int slavenum, UINT targetcontrol);
+int ycoe_ppm_checkstatus(int slavenum, UINT targetstatus);
+
+int ycoe_ppm_get_parameters(void);
+
+int ycoe_ppm_set_velocity (UDINT profile_velocity);
+int ycoe_ppm_set_acceleration (UDINT profile_acceleration);
+int ycoe_ppm_set_deceleration (UDINT profile_deceleration);
+int ycoe_ppm_set_quick_stop_deceleration (UDINT quick_stop_deceleration);
+int ycoe_ppm_set_parameters (UDINT profile_velocity, UDINT profile_acceleration, UDINT profile_deceleration, UDINT quick_stop_deceleration);
+
+int ycoe_set_slave_position (int slavenum, DINT position);
 #endif

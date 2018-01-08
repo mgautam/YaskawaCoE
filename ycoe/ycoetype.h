@@ -1,6 +1,8 @@
 #ifndef _YCOETYPE_H
 #define _YCOETYPE_H
 
+#include "ethercattype.h"
+
 /* Yaskawa CoE datatype and size definitions */
 typedef int8 SINT;
 typedef uint8 USINT;
@@ -28,15 +30,6 @@ enum {
   CYCLIC_SYNC_VELOCITY_MODE   = 9,
   CYCLIC_SYNC_TORQUE_MODE     = 10
 } ycoe_operation_modes;
-
-enum {
-  CW_SHUTDOWN = 6,
-  CW_SWITCHON = 7,
-  CW_ENABLEOP = 0xF,
-  CW_DISABLEOP = 7,
-  CW_QUICKSTP = 2,
-  CW_DISABLEV = 0
-} cw_bit03; /* Controlword bit 0 to 3 */
 
 int ycoe_set_mode_of_operation (SINT mode_of_operation);
 

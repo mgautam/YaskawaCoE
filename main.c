@@ -64,13 +64,14 @@ void coeController(char *ifname)
             printf("segments : %d : %d %d %d %d\n",ec_group[0].nsegments ,ec_group[0].IOsegment[0],ec_group[0].IOsegment[1],ec_group[0].IOsegment[2],ec_group[0].IOsegment[3]);
 
 	          /* Check & Set Profile Position Mode Parameters */
-            ycoe_get_profile_position_parameters();
+            ycoe_ppm_get_parameters();
             ycoe_set_mode_of_operation(PROFILE_POSITION_MODE);
-            ycoe_set_profile_velocity(502400);
+            ycoe_ppm_set_velocity(502400);
 
             printf("Request operational state for all slaves\n");
             expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
             printf("Calculated workcounter %d\n", expectedWKC);
+
             ec_slave[0].state = EC_STATE_OPERATIONAL;
             /* send one valid process data to make outputs in slaves happy*/
             ec_send_processdata();
@@ -90,42 +91,55 @@ void coeController(char *ifname)
             {
                 printf("Operational state reached for all slaves.\n");
                 inOP = TRUE;
+
+                int pos_cmd_sem = 1; // Position Command Semaphore
+                DINT pos_cmds[1] = {0xFFFFFF};
                 /* cyclic loop */
                 for(i = 1; i <= 10000; i++)
                 {
-		                if (i<10) ec_slave[0].outputs[0] = CW_SHUTDOWN;
-                    else if (i<20) ec_slave[0].outputs[0] = CW_SWITCHON;
-		                else if (i<30) {
-			                  ec_slave[0].outputs[0] = CW_ENABLEOP;
-			                  ec_slave[0].outputs[2] = 0xFF; //targetposition
-			                  ec_slave[0].outputs[3] = 0xFF;
-			                  ec_slave[0].outputs[4] = 0xFF;
+                    ycoe_printstatus(1);
+
+                    if(ycoe_checkstatus(1,SW_SWITCHON_DISABLED))
+                      ycoe_setcontrolword(1,CW_SHUTDOWN);
+                    else if(ycoe_checkstatus(1,SW_RTSO))
+                      ycoe_setcontrolword(1,CW_SWITCHON);
+                    else if(ycoe_checkstatus(1,SW_SWITCHED_ON))
+                    {
+                        ycoe_setcontrolword(1,CW_ENABLEOP);
+                        ycoe_set_slave_position (1,0xFFFFFF);
                     }
-		                else if (i<40) ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI1; //startnextposition
-		                else if (i<50) ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI2; //startnextpositionimmediately
-		                else if (i<60) ec_slave[0].outputs[0] = CW_ENABLEOP | CW_PPM_SNPI1; //startnextposition
-		                //else ec_slave[0].outputs[0] = 0x0;
+                    else {
+                      if (ycoe_checkstatus(1,SW_OP_ENABLED))
+                      {
+                        if (ycoe_ppm_checkcontrol(1, CW_PPM_SNPI2) && \
+                            ycoe_ppm_checkstatus(1,SW_SETPOINT_ACK)) {
+                          pos_cmd_sem--;
+                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI1);
+                        }
+                        else if ((pos_cmd_sem>0) && ycoe_ppm_checkcontrol(1, CW_PPM_SNPI1))
+                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI2);
+                        else if (pos_cmd_sem>0)// Only in PP mode, this means CW = 0x0F
+                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI1);
+                      }
+                    }
 
                     ec_send_processdata();
                     wkc = ec_receive_processdata(EC_TIMEOUTRET);
 
                     if(wkc >= expectedWKC)
                     {
-                        printf("Processdata cycle %4d, WKC %d , O:", i, wkc);
+                      printf("PDO cycle %4d, WKC %d , T:%"PRId64"\n", i, wkc, ec_DCtime);
+                      needlf = TRUE;
 
-                        for(j = 0 ; j < oloop; j++)
-                        {
-                            printf(" %2.2x", *(ec_slave[0].outputs + j));
-                        }
+                      printf(" O:");
+                      for(j = 0 ; j < oloop; j++)
+                        printf(" %2.2x", *(ec_slave[0].outputs + j));
 
-                        printf(" I:");
-                        for(j = 0 ; j < iloop; j++)
-                        {
-                            printf(" %2.2x", *(ec_slave[0].inputs + j));
-                        }
-                        printf(" T:%"PRId64"\r\n",ec_DCtime);
-                        needlf = TRUE;
-                    }
+                      printf("\tI:");
+                      for(j = 0 ; j < iloop; j++)
+                        printf(" %2.2x", *(ec_slave[0].inputs + j));
+                      printf("\n");
+                   }
                     osal_usleep(5000);
 
                 }
@@ -133,16 +147,16 @@ void coeController(char *ifname)
             }
             else
             {
-                printf("Not all slaves reached operational state.\n");
-                ec_readstate();
-                for(i = 1; i<=ec_slavecount ; i++)
+              printf("Not all slaves reached operational state.\n");
+              ec_readstate();
+              for(i = 1; i<=ec_slavecount ; i++)
+              {
+                if(ec_slave[i].state != EC_STATE_OPERATIONAL)
                 {
-                    if(ec_slave[i].state != EC_STATE_OPERATIONAL)
-                    {
-                        printf("Slave %d State=0x%2.2x StatusCode=0x%4.4x : %s\n",
-                            i, ec_slave[i].state, ec_slave[i].ALstatuscode, ec_ALstatuscode2string(ec_slave[i].ALstatuscode));
-                    }
+                  printf("Slave %d State=0x%2.2x StatusCode=0x%4.4x : %s\n",
+                      i, ec_slave[i].state, ec_slave[i].ALstatuscode, ec_ALstatuscode2string(ec_slave[i].ALstatuscode));
                 }
+              }
             }
             printf("\nRequest init state for all slaves\n");
             ec_slave[0].state = EC_STATE_INIT;
@@ -151,7 +165,7 @@ void coeController(char *ifname)
         }
         else
         {
-            printf("No slaves found!\n");
+          printf("No slaves found!\n");
         }
         printf("End simple test, close socket\n");
         /* stop SOEM, close socket */
@@ -159,104 +173,104 @@ void coeController(char *ifname)
     }
     else
     {
-        printf("No socket connection on %s\nExcecute as root\n",ifname);
+      printf("No socket connection on %s\nExcecute as root\n",ifname);
     }
 }
 
 OSAL_THREAD_FUNC ecatcheck( void *ptr )
 {
-    int slave;
-    (void)ptr;                  /* Not used */
+  int slave;
+  (void)ptr;                  /* Not used */
 
-    while(1)
+  while(1)
+  {
+    if( inOP && ((wkc < expectedWKC) || ec_group[currentgroup].docheckstate))
     {
-        if( inOP && ((wkc < expectedWKC) || ec_group[currentgroup].docheckstate))
+      if (needlf)
+      {
+        needlf = FALSE;
+        printf("\n");
+      }
+      /* one ore more slaves are not responding */
+      ec_group[currentgroup].docheckstate = FALSE;
+      ec_readstate();
+      for (slave = 1; slave <= ec_slavecount; slave++)
+      {
+        if ((ec_slave[slave].group == currentgroup) && (ec_slave[slave].state != EC_STATE_OPERATIONAL))
         {
-            if (needlf)
+          ec_group[currentgroup].docheckstate = TRUE;
+          if (ec_slave[slave].state == (EC_STATE_SAFE_OP + EC_STATE_ERROR))
+          {
+            printf("ERROR : slave %d is in SAFE_OP + ERROR, attempting ack.\n", slave);
+            ec_slave[slave].state = (EC_STATE_SAFE_OP + EC_STATE_ACK);
+            ec_writestate(slave);
+          }
+          else if(ec_slave[slave].state == EC_STATE_SAFE_OP)
+          {
+            printf("WARNING : slave %d is in SAFE_OP, change to OPERATIONAL.\n", slave);
+            ec_slave[slave].state = EC_STATE_OPERATIONAL;
+            ec_writestate(slave);
+          }
+          else if(ec_slave[slave].state > EC_STATE_NONE)
+          {
+            if (ec_reconfig_slave(slave, EC_TIMEOUTMON))
             {
-               needlf = FALSE;
-               printf("\n");
+              ec_slave[slave].islost = FALSE;
+              printf("MESSAGE : slave %d reconfigured\n",slave);
             }
-            /* one ore more slaves are not responding */
-            ec_group[currentgroup].docheckstate = FALSE;
-            ec_readstate();
-            for (slave = 1; slave <= ec_slavecount; slave++)
+          }
+          else if(!ec_slave[slave].islost)
+          {
+            /* re-check state */
+            ec_statecheck(slave, EC_STATE_OPERATIONAL, EC_TIMEOUTRET);
+            if (ec_slave[slave].state == EC_STATE_NONE)
             {
-               if ((ec_slave[slave].group == currentgroup) && (ec_slave[slave].state != EC_STATE_OPERATIONAL))
-               {
-                  ec_group[currentgroup].docheckstate = TRUE;
-                  if (ec_slave[slave].state == (EC_STATE_SAFE_OP + EC_STATE_ERROR))
-                  {
-                     printf("ERROR : slave %d is in SAFE_OP + ERROR, attempting ack.\n", slave);
-                     ec_slave[slave].state = (EC_STATE_SAFE_OP + EC_STATE_ACK);
-                     ec_writestate(slave);
-                  }
-                  else if(ec_slave[slave].state == EC_STATE_SAFE_OP)
-                  {
-                     printf("WARNING : slave %d is in SAFE_OP, change to OPERATIONAL.\n", slave);
-                     ec_slave[slave].state = EC_STATE_OPERATIONAL;
-                     ec_writestate(slave);
-                  }
-                  else if(ec_slave[slave].state > EC_STATE_NONE)
-                  {
-                     if (ec_reconfig_slave(slave, EC_TIMEOUTMON))
-                     {
-                        ec_slave[slave].islost = FALSE;
-                        printf("MESSAGE : slave %d reconfigured\n",slave);
-                     }
-                  }
-                  else if(!ec_slave[slave].islost)
-                  {
-                     /* re-check state */
-                     ec_statecheck(slave, EC_STATE_OPERATIONAL, EC_TIMEOUTRET);
-                     if (ec_slave[slave].state == EC_STATE_NONE)
-                     {
-                        ec_slave[slave].islost = TRUE;
-                        printf("ERROR : slave %d lost\n",slave);
-                     }
-                  }
-               }
-               if (ec_slave[slave].islost)
-               {
-                  if(ec_slave[slave].state == EC_STATE_NONE)
-                  {
-                     if (ec_recover_slave(slave, EC_TIMEOUTMON))
-                     {
-                        ec_slave[slave].islost = FALSE;
-                        printf("MESSAGE : slave %d recovered\n",slave);
-                     }
-                  }
-                  else
-                  {
-                     ec_slave[slave].islost = FALSE;
-                     printf("MESSAGE : slave %d found\n",slave);
-                  }
-               }
+              ec_slave[slave].islost = TRUE;
+              printf("ERROR : slave %d lost\n",slave);
             }
-            if(!ec_group[currentgroup].docheckstate)
-               printf("OK : all slaves resumed OPERATIONAL.\n");
+          }
         }
-        osal_usleep(10000);
+        if (ec_slave[slave].islost)
+        {
+          if(ec_slave[slave].state == EC_STATE_NONE)
+          {
+            if (ec_recover_slave(slave, EC_TIMEOUTMON))
+            {
+              ec_slave[slave].islost = FALSE;
+              printf("MESSAGE : slave %d recovered\n",slave);
+            }
+          }
+          else
+          {
+            ec_slave[slave].islost = FALSE;
+            printf("MESSAGE : slave %d found\n",slave);
+          }
+        }
+      }
+      if(!ec_group[currentgroup].docheckstate)
+        printf("OK : all slaves resumed OPERATIONAL.\n");
     }
+    osal_usleep(10000);
+  }
 }
 
 int main(int argc, char *argv[])
 {
-   printf("YaskawaCoE (Yaskawa Canopen over Ethercat Master)\nControl Application\n");
+  printf("YaskawaCoE (Yaskawa Canopen over Ethercat Master)\nControl Application\n");
 
-   if (argc > 1)
-   {
-      /* create thread to handle slave error handling in OP */
-//      pthread_create( &thread1, NULL, (void *) &ecatcheck, (void*) &ctime);
-      osal_thread_create(&thread1, 128000, &ecatcheck, (void*) &ctime);
-      /* start cyclic part */
-      coeController(argv[1]);
-   }
-   else
-   {
-      printf("Usage: yaskawaCoE ifname1\nifname = eth0 for example\n");
-   }
+  if (argc > 1)
+  {
+    /* create thread to handle slave error handling in OP */
+    //      pthread_create( &thread1, NULL, (void *) &ecatcheck, (void*) &ctime);
+    osal_thread_create(&thread1, 128000, &ecatcheck, (void*) &ctime);
+    /* start cyclic part */
+    coeController(argv[1]);
+  }
+  else
+  {
+    printf("Usage: yaskawaCoE ifname1\nifname = eth0 for example\n");
+  }
 
-   printf("End program\n");
-   return (0);
+  printf("End program\n");
+  return (0);
 }
