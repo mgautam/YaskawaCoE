@@ -11,6 +11,11 @@ enum {
 } cw_bit03; /* Controlword bit 0 to 3 */
 
 enum {
+  CW_MASK_02 = 0x7,
+  CW_MASK_03 = 0xF
+} cw_mask_bit03; /* Controlword mask bits 0 to 3 */
+
+enum {
   SW_NRTSO              = 0, /* Not Ready to Switch on */
   SW_SWITCHON_DISABLED  = 0x40,
   SW_RTSO               = 0x21, /* Ready to Switch on */

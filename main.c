@@ -97,7 +97,9 @@ void coeController(char *ifname)
                 /* cyclic loop */
                 for(i = 1; i <= 10000; i++)
                 {
-		                //if (i<10) //ec_slave[0].outputs[0] = CW_SHUTDOWN;
+                    ycoe_printstatus(1);
+
+                    //if (i<10) //ec_slave[0].outputs[0] = CW_SHUTDOWN;
                     if(ycoe_checkstatus(1,SW_SWITCHON_DISABLED))
                       ycoe_setcontrolword(1,CW_SHUTDOWN);
                     //else if (i<20) //ec_slave[0].outputs[0] = CW_SWITCHON;
@@ -134,23 +136,24 @@ void coeController(char *ifname)
                       //ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI1);
                       //else ec_slave[0].outputs[0] = 0x0;
                     }
+
                     ec_send_processdata();
                     wkc = ec_receive_processdata(EC_TIMEOUTRET);
 
                     if(wkc >= expectedWKC)
                     {
-                      printf("Processdata cycle %4d, WKC %d , O:", i, wkc);
+                      printf("PDO cycle %4d, WKC %d , T:%"PRId64"\r\n", i, wkc, ec_DCtime);
+                      needlf = TRUE;
 
+                      printf(" O:");
                       for(j = 0 ; j < oloop; j++)
                         printf(" %2.2x", *(ec_slave[0].outputs + j));
 
-                      printf(" I:");
+                      printf("\tI:");
                       for(j = 0 ; j < iloop; j++)
                         printf(" %2.2x", *(ec_slave[0].inputs + j));
-
-                      printf(" T:%"PRId64"\r\n",ec_DCtime);
-                      needlf = TRUE;
-                    }
+                      printf("\n");
+                   }
                     osal_usleep(5000);
 
                 }

@@ -8,9 +8,10 @@ int ycoe_ppm_checkcontrol (int slavenum, UINT targetcontrol) {
   int retval = 0;
 
   //if (targetcontrol & CW_PPM_MASK_SNPI == CW_PPM_SNPI1 || targetcontrol & CW_PPM_MASK_SNPI == CW_PPM_SNPI2)
-    if (targetcontrol == CW_PPM_SNPI1 || targetcontrol == CW_PPM_SNPI2)
-      if (*controlword & CW_PPM_MASK_SNPI == targetcontrol)
+    if ((targetcontrol == CW_PPM_SNPI1) || (targetcontrol == CW_PPM_SNPI2)) {
+      if ((*controlword & CW_PPM_MASK_SNPI) == targetcontrol)
         retval++;
+    }
 
   return retval;
 }
