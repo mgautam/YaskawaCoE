@@ -40,8 +40,12 @@ enum {
 #define SW_INTERNAL_LIMIT 0x800 /* Internal (Position) Limit Active */
 
 
-
+#ifdef _WIN32
+int ycoe_setcontrolword(int slavenum, uint16 controlvalue);
+int ycoe_checkstatus (int slavenum, uint16 targetstatus);
+#else
 int ycoe_setcontrolword(int slavenum, UINT controlvalue);
 int ycoe_checkstatus (int slavenum, UINT targetstatus);
+#endif
 int ycoe_printstatus (int slavenum);
 #endif
