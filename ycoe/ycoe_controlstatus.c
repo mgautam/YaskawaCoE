@@ -11,7 +11,7 @@ int ycoe_setcontrolword(int slavenum, UINT controlvalue) {
     UINT *controlword = (UINT *) ec_slave[slavenum].outputs;
 #endif
     *controlword = controlvalue;
-
+/*
     printf("Controlword: %x -> ",controlvalue);
     if ((controlvalue & CW_MASK_03) == CW_ENABLEOP)
         printf("EnOp");
@@ -21,7 +21,7 @@ int ycoe_setcontrolword(int slavenum, UINT controlvalue) {
         printf("ShDn");
 
     printf("\n");
-
+*/
     return 0;
 }
 

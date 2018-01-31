@@ -159,7 +159,7 @@ void coeController(char *ifname)
 #else
             pthread_mutex_unlock(&IOmutex);
 #endif
-
+/*
 					  printf("PDO cycle %4d, WKC %d , T:%"PRId64"\n", i, wkc, ec_DCtime);
 
                       printf(" O:");
@@ -170,8 +170,8 @@ void coeController(char *ifname)
                       for(j = 0 ; j < iloop; j++)
                         printf(" %2.2x", *(ec_slave[0].inputs + j));
                       printf("\n");
-                   }
-                    osal_usleep(5000);
+*/                   }
+                    osal_usleep(1000);
 
                 }
                 inOP = FALSE;

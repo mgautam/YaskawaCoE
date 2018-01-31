@@ -4,5 +4,12 @@ mkdir build
 cd build
 cmake ..
 make
-cd ..
+
+pyenv local 3.5.1
+virtualenv -p python3.5 guivenv
+cd guivenv
+. bin/activate
+cp ../../gui/* .
+pip install -r requirements.txt
+cd ../..
 
