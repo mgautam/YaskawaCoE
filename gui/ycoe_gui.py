@@ -1,4 +1,5 @@
-import json
+#import json
+import struct
 import zmq
 from kivy.app import App
 from kivy.uix.button import Button
@@ -28,6 +29,22 @@ class AbsMoveBtn(Button):
         message = ctrlwindow.socket.recv()
         #print("Received reply %s [ %s ]" % (cmdmsg, message))
 
+class CmdPosBtn(Button):
+    def move_cmdpos(self, strposition):
+        ctrlwindow=self.parent.parent.parent
+        distance=int(strposition)
+        if distance>4294967295:
+            distance=4294967295
+        elif distance<0:
+            distance=0
+        #cmdmsg=json.dumps({"type":"absolute","distance":distance})
+        #print([distance, distance.to_bytes(4, byteorder='little'), struct.pack(distance])
+        #print(struct.pack('<BI',3,distance))
+        ctrlwindow.socket.send(struct.pack('<BI',3,distance))
+        message = ctrlwindow.socket.recv()
+        #print("Received reply %s [ %s ]" % (cmdmsg, message))
+
+
 class AbsGoBtn(Button):
     def move_absolute(self, distance):
         ctrlwindow=self.get_parent_window
@@ -45,15 +62,16 @@ class controlWindow(FloatLayout):
         self.socket.connect("tcp://localhost:5555")
         Clock.schedule_interval(self._zmq_read, .9)
         return super().__init__(**kwargs)
-    
+
     def _zmq_read(self, dt):
         try:
-            self.socket.send_string("Request")            
+            self.socket.send_string("Request")
             data = self.socket.recv()
-            self.possts.text=''.join('{:02x}'.format(x)for x in data[4:8])
-            #int.from_bytes(data[4:7],byteorder='big', signed=True)
-            self.statusword.text=''.join('{:02x}'.format(x)for x in data[2:4])
-            self.controlword.text=''.join('{:02x}'.format(x)for x in data[8:10])
+            #self.possts.text=''.join('{:02x}'.format(x) for x in data[4:8])
+            self.postar.text=str(int.from_bytes(data[10:14],byteorder='little'))
+            self.possts.text=str(int.from_bytes(data[4:8],byteorder='little'))
+            self.statusword.text=''.join('{:02x}'.format(x) for x in data[2:4])
+            self.controlword.text=''.join('{:02x}'.format(x) for x in data[8:10])
         except zmq.ZMQError:
             pass
 

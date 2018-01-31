@@ -11,6 +11,8 @@
     statuslbl:status_lbl
     fwdbtn:_fwdBtn
     bwdbtn:_bwdBtn
+    cmdposbtn:_cmdposBtn
+    postar:_postar
     possts:_possts
     statusword:_status
     controlword:_control
@@ -18,14 +20,18 @@
         id: ctrl_area
         size_hint:None,None
         size:root.width,root.height*12/15-30
-        pos:0,root.height*2/15 
+        pos:0,root.height*2/15
         GridLayout:
             cols:2
-            rows:3
+            rows:4
             size_hint:None,None
             size:root.width/3,root.height*12/15-30
             StsLabel:
-                text:"Position"
+                text:"Target Position"
+            StsLabel:
+                id:_postar
+            StsLabel:
+                text:"Current Position"
             StsLabel:
                 id:_possts
             StsLabel:
@@ -37,18 +43,25 @@
             StsLabel:
                 id:_control
         GridLayout:
-            rows:2
+            rows:4
             size_hint:None,None
             size:root.width/3,root.height*2/5
             pos:root.width*1/2,root.height/2-self.height/2
             AbsMoveBtn:
                 id:_fwdBtn
-                text:'Forward'
+                text:'Goto 0xFFFFFF'
                 on_press:self.move_absolute(b'\x03\xFF\xFF\xFF\x00')
             AbsMoveBtn:
                 id:_bwdBtn
-                text:'Backward'
-                on_press:self.move_absolute(b'\x03\x01\x02\x01\x00')
+                text:'Home ZeroPos'
+                on_press:self.move_absolute(b'\x03\x00\x00\x00\x00')
+            CmdPosBtn:
+                id:_cmdposBtn
+                cmdpos:_cmdpos
+                text:'Goto'
+                on_press:self.move_cmdpos(self.cmdpos.text)
+            TextInput:
+                id:_cmdpos
     Label:
         id: cmd_lbl
         size_hint:None,None
@@ -56,7 +69,7 @@
         pos:0,root.height/15
         halign: 'left'
         text_size: self.size
-        text:"Last Command: " 
+        text:"Last Command: "
     Label:
         id: status_lbl
         size_hint:None,None
