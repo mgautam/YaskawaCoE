@@ -5,6 +5,7 @@ Dependencies
 ------------
 
  * CMake 2.8.0 or later
+ * Python 3.6.4 or later
 
 Build Status
 ------------

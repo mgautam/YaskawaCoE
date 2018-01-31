@@ -1,0 +1,67 @@
+<StsLabel@Button>:
+    #size_hint:None,None
+    #size:root.width/5,root.height/15
+    text_size:self.size
+    halign:'center'
+    valign:'middle'
+
+<controlWindow@FloatLayout>:
+    controlarea: ctrl_area
+    cmdlbl:cmd_lbl
+    statuslbl:status_lbl
+    fwdbtn:_fwdBtn
+    bwdbtn:_bwdBtn
+    possts:_possts
+    statusword:_status
+    controlword:_control
+    RelativeLayout:
+        id: ctrl_area
+        size_hint:None,None
+        size:root.width,root.height*12/15-30
+        pos:0,root.height*2/15 
+        GridLayout:
+            cols:2
+            rows:3
+            size_hint:None,None
+            size:root.width/3,root.height*12/15-30
+            StsLabel:
+                text:"Position"
+            StsLabel:
+                id:_possts
+            StsLabel:
+                text:"StatusWord"
+            StsLabel:
+                id:_status
+            StsLabel:
+                text:"ControlWord"
+            StsLabel:
+                id:_control
+        GridLayout:
+            rows:2
+            size_hint:None,None
+            size:root.width/3,root.height*2/5
+            pos:root.width*1/2,root.height/2-self.height/2
+            AbsMoveBtn:
+                id:_fwdBtn
+                text:'Forward'
+                on_press:self.move_absolute(b'\x03\xFF\xFF\xFF\x00')
+            AbsMoveBtn:
+                id:_bwdBtn
+                text:'Backward'
+                on_press:self.move_absolute(b'\x03\x01\x02\x01\x00')
+    Label:
+        id: cmd_lbl
+        size_hint:None,None
+        size:root.width,root.height/15
+        pos:0,root.height/15
+        halign: 'left'
+        text_size: self.size
+        text:"Last Command: " 
+    Label:
+        id: status_lbl
+        size_hint:None,None
+        size:root.width,root.height/15
+        pos:0,0
+        halign: 'left'
+        text_size: self.size
+        text:"Status: "

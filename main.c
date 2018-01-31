@@ -11,23 +11,35 @@
 #include <string.h>
 #include <inttypes.h>
 
+#include "zmq.h"
+
 #include "ethercat.h"
 #include "yaskawacoe.h"
 
+#ifndef _WIN32
+#include <pthread.h>
+#endif
+
 #define EC_TIMEOUTMON 500
 
+#ifdef _WIN32
+HANDLE IOmutex;
+#else
+pthread_mutex_t IOmutex;
+#endif
+
+char guiIOmap[4096];
+int pos_cmd_sem = 1; // Position Command Semaphore
+char  oloop, iloop;
 char IOmap[4096];
-OSAL_THREAD_HANDLE thread1;
 int expectedWKC;
-boolean needlf;
 volatile int wkc;
 boolean inOP;
 uint8 currentgroup = 0;
 
 void coeController(char *ifname)
 {
-    int i, j, oloop, iloop, chk;
-    needlf = FALSE;
+    int i, j, chk;
     inOP = FALSE;
 
     printf("Starting YaskawaCoE master\n");
@@ -92,12 +104,13 @@ void coeController(char *ifname)
                 printf("Operational state reached for all slaves.\n");
                 inOP = TRUE;
 
-                int pos_cmd_sem = 1; // Position Command Semaphore
-                DINT pos_cmds[1] = {0xFFFFFF};
                 /* cyclic loop */
-                for(i = 1; i <= 10000; i++)
+                //for(i = 1; i <= 10000; i++)
+				i = 0;
+				while(1)
                 {
-                    ycoe_printstatus(1);
+					i++;
+                    //ycoe_printstatus(1);
 
                     if(ycoe_checkstatus(1,SW_SWITCHON_DISABLED))
                       ycoe_setcontrolword(1,CW_SHUTDOWN);
@@ -111,6 +124,7 @@ void coeController(char *ifname)
                     else {
                       if (ycoe_checkstatus(1,SW_OP_ENABLED))
                       {
+
                         if (ycoe_ppm_checkcontrol(1, CW_PPM_SNPI2) && \
                             ycoe_ppm_checkstatus(1,SW_SETPOINT_ACK)) {
                           pos_cmd_sem--;
@@ -121,6 +135,7 @@ void coeController(char *ifname)
                         else if (pos_cmd_sem>0)// Only in PP mode, this means CW = 0x0F
                           ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI1);
                       }
+
                     }
 
                     ec_send_processdata();
@@ -128,8 +143,24 @@ void coeController(char *ifname)
 
                     if(wkc >= expectedWKC)
                     {
-                      printf("PDO cycle %4d, WKC %d , T:%"PRId64"\n", i, wkc, ec_DCtime);
-                      needlf = TRUE;
+#ifdef _WIN32
+						WaitForSingleObject(IOmutex, INFINITE);
+#else
+            pthread_mutex_lock(&IOmutex);
+#endif
+            guiIOmap[0] = iloop;
+						guiIOmap[1] = oloop;
+						for (j = 2; j < 2+iloop; j++)
+							guiIOmap[j] = ec_slave[0].inputs[j-2];
+						for (j = 2+iloop; j < 2+iloop+oloop; j++)
+							guiIOmap[j] = ec_slave[0].outputs[j-2-iloop];
+#ifdef _WIN32
+						ReleaseMutex(IOmutex);
+#else
+            pthread_mutex_unlock(&IOmutex);
+#endif
+
+					  printf("PDO cycle %4d, WKC %d , T:%"PRId64"\n", i, wkc, ec_DCtime);
 
                       printf(" O:");
                       for(j = 0 ; j < oloop; j++)
@@ -186,11 +217,6 @@ OSAL_THREAD_FUNC ecatcheck( void *ptr )
   {
     if( inOP && ((wkc < expectedWKC) || ec_group[currentgroup].docheckstate))
     {
-      if (needlf)
-      {
-        needlf = FALSE;
-        printf("\n");
-      }
       /* one ore more slaves are not responding */
       ec_group[currentgroup].docheckstate = FALSE;
       ec_readstate();
@@ -254,8 +280,53 @@ OSAL_THREAD_FUNC ecatcheck( void *ptr )
   }
 }
 
+/* Server for talking to GUI Application */
+OSAL_THREAD_FUNC controlserver(void *ptr) {
+	//  Socket to talk to clients
+	void *context = zmq_ctx_new();
+	void *responder = zmq_socket(context, ZMQ_REP);
+	int rc = zmq_bind(responder, "tcp://*:5555");
+	char buffer[10];
+
+	while (1) {
+    zmq_recv(responder, buffer, 10, 0);
+#ifdef _WIN32
+    WaitForSingleObject(IOmutex, INFINITE);
+#else
+    pthread_mutex_lock(&IOmutex);
+#endif
+    if (buffer[0] == 3) {
+      DINT *x = (DINT *)(buffer + 1);
+      ycoe_set_slave_position(1, *x);//Vulnerable to racing conditions
+      pos_cmd_sem++;
+    }
+
+    zmq_send(responder, guiIOmap, 2+iloop+oloop, 0);
+#ifdef _WIN32
+    ReleaseMutex(IOmutex);
+#else
+    pthread_mutex_unlock(&IOmutex);
+#endif
+  }
+}
+
 int main(int argc, char *argv[])
 {
+  OSAL_THREAD_HANDLE thread1, thread2;
+#ifdef _WIN32
+  IOmutex = CreateMutex(
+      NULL,              // default security attributes
+      FALSE,             // initially not owned
+      NULL);             // unnamed mutex
+  if (IOmutex == NULL)
+  {
+    printf("CreateMutex error: %d\n", GetLastError());
+    return 1;
+  }
+#else
+  //IOmutex = PTHREAD_MUTEX_INITALIZER;
+  pthread_mutex_init(&IOmutex, NULL);
+#endif
   printf("YaskawaCoE (Yaskawa Canopen over Ethercat Master)\nControl Application\n");
 
   if (argc > 1)
@@ -263,6 +334,8 @@ int main(int argc, char *argv[])
     /* create thread to handle slave error handling in OP */
     //      pthread_create( &thread1, NULL, (void *) &ecatcheck, (void*) &ctime);
     osal_thread_create(&thread1, 128000, &ecatcheck, (void*) &ctime);
+    // thread to handle gui application requests
+    osal_thread_create(&thread2, 128000, &controlserver, (void*)&ctime);
     /* start cyclic part */
     coeController(argv[1]);
   }
@@ -271,6 +344,11 @@ int main(int argc, char *argv[])
     printf("Usage: yaskawaCoE ifname1\nifname = eth0 for example\n");
   }
 
+#ifdef _WIN32
+  CloseHandle(IOmutex);
+#else
+  pthread_mutex_destroy(&IOmutex);
+#endif
   printf("End program\n");
   return (0);
 }
