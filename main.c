@@ -58,12 +58,8 @@ void coeController(char *ifname)
             ec_config_map(&IOmap);
             printf("Slaves mapped, state to SAFE_OP requested.\n");
 
-            printf("System Time Difference in slave %d: %d\n\r", 1,ycoe_read_sysdeltatime(1));
-            printf("System Time Difference in slave %d: %d\n\r", 2,ycoe_read_sysdeltatime(2));
            /* Configure Distributed Clock mechanism */
             ec_configdc();
-            printf("System Time Difference in slave %d: %d\n\r", 1,ycoe_read_sysdeltatime(1));
-            printf("System Time Difference in slave %d: %d\n\r", 2,ycoe_read_sysdeltatime(2));
 
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
@@ -81,7 +77,10 @@ void coeController(char *ifname)
 
 	          /* Check & Set Profile Position Mode Parameters */
             ycoe_ppm_get_parameters();
+            ycoe_ppm_setup(1);
+            printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
             ycoe_set_mode_of_operation(PROFILE_POSITION_MODE);
+            printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
             ycoe_ppm_set_velocity(502400);
 
             printf("Request operational state for all slaves\n");
@@ -109,11 +108,10 @@ void coeController(char *ifname)
                 inOP = TRUE;
 
                 /* cyclic loop */
-                //for(i = 1; i <= 10000; i++)
-				i = 0;
-				while(1)
+				        i = 0;
+        				while(1)
                 {
-					i++;
+				          	i++;
                     //ycoe_printstatus(1);
 
                     if(ycoe_checkstatus(1,SW_SWITCHON_DISABLED))
@@ -148,23 +146,23 @@ void coeController(char *ifname)
                     if(wkc >= expectedWKC)
                     {
 #ifdef _WIN32
-						WaitForSingleObject(IOmutex, INFINITE);
+           						WaitForSingleObject(IOmutex, INFINITE);
 #else
-            pthread_mutex_lock(&IOmutex);
+                      pthread_mutex_lock(&IOmutex);
 #endif
-            guiIOmap[0] = iloop;
-						guiIOmap[1] = oloop;
-						for (j = 2; j < 2+iloop; j++)
-							guiIOmap[j] = ec_slave[0].inputs[j-2];
-						for (j = 2+iloop; j < 2+iloop+oloop; j++)
-							guiIOmap[j] = ec_slave[0].outputs[j-2-iloop];
+                      guiIOmap[0] = iloop;
+          						guiIOmap[1] = oloop;
+					          	for (j = 2; j < 2+iloop; j++)
+          							guiIOmap[j] = ec_slave[0].inputs[j-2];
+					          	for (j = 2+iloop; j < 2+iloop+oloop; j++)
+          							guiIOmap[j] = ec_slave[0].outputs[j-2-iloop];
 #ifdef _WIN32
-						ReleaseMutex(IOmutex);
+					          	ReleaseMutex(IOmutex);
 #else
-            pthread_mutex_unlock(&IOmutex);
+                      pthread_mutex_unlock(&IOmutex);
 #endif
 /*
-					  printf("PDO cycle %4d, WKC %d , T:%"PRId64"\n", i, wkc, ec_DCtime);
+          					  printf("PDO cycle %4d, WKC %d , T:%"PRId64"\n", i, wkc, ec_DCtime);
 
                       printf(" O:");
                       for(j = 0 ; j < oloop; j++)

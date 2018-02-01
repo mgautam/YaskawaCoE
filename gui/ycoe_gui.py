@@ -48,7 +48,7 @@ class RegReadBtn(Button):
     def readreg(self, slaveaddr, regaddr):
         ctrlwindow=self.parent.parent.parent
         islaveaddr=int(slaveaddr)
-        iregaddr=int(regaddr)
+        iregaddr=int(regaddr,16)
         if islaveaddr > 0xFFFF:
             islaveaddr = 0xFFFF
         if iregaddr > 0xFFFF:
@@ -60,8 +60,8 @@ class ReadCOBtn(Button):
     def readcoparam(self, slaveaddr, index, subindex):
         ctrlwindow=self.parent.parent.parent
         islaveaddr=int(slaveaddr)
-        iindex=int(index)
-        isubindex=int(subindex)
+        iindex=int(index,16)
+        isubindex=int(subindex,16)
         if islaveaddr > 0xFFFF:
             islaveaddr = 0xFFFF
         if iindex > 0xFFFF:

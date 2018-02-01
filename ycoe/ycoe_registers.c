@@ -39,6 +39,15 @@ DINT ycoe_readCOparam(int slavenum, uint16 index, uint16 subindex) {
   return udintbuff;
 }
 
+int ycoex_writereg(ecx_contextt *context, int slavenum, uint16 regaddr, int size, UINT *data) {
+  uint16 slaveh = context->slavelist[slavenum].configadr;
+  (void)ecx_FPWR(context->port, slaveh, regaddr, size, data, EC_TIMEOUTRET);
+  return 0;
+}
+int ycoe_writereg(int slavenum, uint16 regaddr, int size, UINT data) {
+  return ycoex_writereg(&ecx_context, slavenum, regaddr, size, &data);
+}
+
 DINT ycoe_read_sysdeltatime(int slavenum) {
   return ycoex_readreg_dint(&ecx_context, slavenum, 0x92C);
 }

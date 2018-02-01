@@ -1,7 +1,35 @@
 #include <stdio.h>
 #include "ethercat.h"
 #include "ycoetype.h"
+#include "ycoe_registers.h"
 #include "ycoe_profile_position.h"
+
+int ycoe_ppm_setup(int slavenum) {
+    USINT usintbuff;
+    int usintsize = USINT_SIZE;
+    UDINT udintbuff;
+    int udintsize = UDINT_SIZE;
+
+    /* Disable the assignment of Sync manager and PDO */
+    usintbuff=0;
+    ec_SDOwrite(slavenum,0x1C12,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
+    ec_SDOwrite(slavenum,0x1C13,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
+
+    /* Set Target Position for target position in RxPDO */
+    udintbuff=0x607A0020;
+    ec_SDOwrite(slavenum,0x1601,2,0,UDINT_SIZE,&udintbuff,EC_TIMEOUTRXM);
+
+    /* Enable the assignment of Sync manager and PDO */
+    usintbuff=1;
+    ec_SDOwrite(slavenum,0x1C12,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
+    ec_SDOwrite(slavenum,0x1C13,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
+
+    /* Enable DC Mode with Sync0 Generation */
+    ycoe_writereg(slavenum, 0x980, UINT_SIZE, 0x0000);
+    return 0;
+}
+
+
 
 int ycoe_ppm_checkcontrol (int slavenum, UINT targetcontrol) {
   UINT *controlword = (UINT *)ec_slave[slavenum].outputs;
