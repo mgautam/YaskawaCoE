@@ -26,6 +26,7 @@ int ycoe_ipm_setup(int slavenum) {
 
     /* Enable DC Mode with Sync0 Generation */
     //ycoe_writereg(slavenum, 0x980, UINT_SIZE, 0x0300);
+    ec_dcsync0(slavenum,1,1000000,0);//CycleTime=1ms, CycleShift=0
     return 0;
 }
 

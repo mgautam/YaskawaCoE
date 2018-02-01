@@ -25,7 +25,7 @@ int ycoe_ppm_setup(int slavenum) {
     ec_SDOwrite(slavenum,0x1C13,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
 
     /* Enable DC Mode with Sync0 Generation */
-    ycoe_writereg(slavenum, 0x980, UINT_SIZE, 0x0000);
+    //ycoe_writereg(slavenum, 0x980, UINT_SIZE, 0x0000);
     return 0;
 }
 

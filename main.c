@@ -49,22 +49,36 @@ void coeController(char *ifname)
     {
         printf("ec_init on %s succeeded.\n",ifname);
 
-        /* find and auto-config slaves */
+        /*
+           ec_config_init find and auto-config slaves.
+           It requests all slaves to state PRE-OP.
+           All data read and configured are stored in a global array ec_slave
+        */
         if ( ec_config_init(FALSE) > 0 )
         {
             printf("%d slaves found and configured. PRE_OP requested on all slaves.\n",ec_slavecount);
 
-            /* read PDO mapping and set local buffer for PDO exchange */
+            /* Configure Distributed Clock mechanism */
+            ec_configdc();
+            /* Check & Set Profile Position Mode Parameters */
+            //ycoe_ppm_get_parameters();
+            ycoe_ppm_setup(1);
+            printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
+            ycoe_set_mode_of_operation(PROFILE_POSITION_MODE);
+            printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
+            ycoe_ppm_set_velocity(502400);
+
+
+
+            /*
+               ec_config_map reads PDO mapping and set local buffer for PDO exchange.
+               It requests all slaves to state SAFE-OP.
+               Outputs are placed together in the beginning of IOmap, inputs follow
+            */
             ec_config_map(&IOmap);
             printf("Slaves mapped, state to SAFE_OP requested.\n");
-
-           /* Configure Distributed Clock mechanism */
-            ec_configdc();
-
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
-
-
             /* slave0 is the master. All slaves pdos are mapped to slave0 */
             oloop = ec_slave[0].Obytes; /* Obytes are the total number of output bytes consolidated from all slaves */
             if ((oloop == 0) && (ec_slave[0].Obits > 0)) oloop = 1;
@@ -75,18 +89,11 @@ void coeController(char *ifname)
 
             printf("segments : %d : %d %d %d %d\n",ec_group[0].nsegments ,ec_group[0].IOsegment[0],ec_group[0].IOsegment[1],ec_group[0].IOsegment[2],ec_group[0].IOsegment[3]);
 
-	          /* Check & Set Profile Position Mode Parameters */
-            ycoe_ppm_get_parameters();
-            ycoe_ppm_setup(1);
-            printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
-            ycoe_set_mode_of_operation(PROFILE_POSITION_MODE);
-            printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
-            ycoe_ppm_set_velocity(502400);
+
 
             printf("Request operational state for all slaves\n");
             expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
             printf("Calculated workcounter %d\n", expectedWKC);
-
             ec_slave[0].state = EC_STATE_OPERATIONAL;
             /* send one valid process data to make outputs in slaves happy*/
             ec_send_processdata();
@@ -101,6 +108,8 @@ void coeController(char *ifname)
                 ec_receive_processdata(EC_TIMEOUTRET);
                 ec_statecheck(0, EC_STATE_OPERATIONAL, 50000);
             } while (chk-- && (ec_slave[0].state != EC_STATE_OPERATIONAL));
+
+
 
             if (ec_slave[0].state == EC_STATE_OPERATIONAL )
             {

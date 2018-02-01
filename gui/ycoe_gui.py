@@ -2,6 +2,8 @@
 import struct
 import zmq
 from kivy.app import App
+from kivy.config import Config
+from kivy.core.window import Window
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.clock import Clock
@@ -109,7 +111,10 @@ class controlWindow(FloatLayout):
 
 class ControlApp(App):
     def build(self):
+        self.title = "YaskawaCoE Master"
         return controlWindow()
 
 if __name__ == '__main__':
+    Config.set('graphics', 'width',  900)
+    Config.set('graphics', 'height', 600)
     ControlApp().run()

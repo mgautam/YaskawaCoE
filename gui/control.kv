@@ -19,13 +19,19 @@
     RelativeLayout:
         id: ctrl_area
         size_hint:None,None
-        size:root.width,root.height*12/15-30
-        pos:0,root.height*2/15
+        size:root.width,root.height-30
+        pos:0,30
+        Label:
+            size_hint:None,None
+            size:160,30
+            pos:100,510
+            text: "Slave 1"
         GridLayout:
             cols:2
             rows:4
             size_hint:None,None
-            size:root.width/3,root.height*12/15-30
+            size:300,200
+            pos:30,300
             StsLabel:
                 text:"Target Position"
             StsLabel:
@@ -43,32 +49,10 @@
             StsLabel:
                 id:_control
         GridLayout:
-            cols:2
-            rows:3
-            size_hint:None,None
-            size:root.width/3,root.height/5
-            pos:root.width*1/2,2*root.height/3-self.height/2
-            Label:
-                text:"Slave Address"
-            TextInput:
-                id:_slaveaddr
-            Label:
-                text:"Register Address"
-            TextInput:
-                id:_regaddr
-            Label:
-                text:""
-            RegReadBtn:
-                id:_regReadBtn
-                slaveaddr: _slaveaddr
-                regaddr:_regaddr
-                text:'Read Register'
-                on_press:self.readreg(self.slaveaddr.text, self.regaddr.text)
-        GridLayout:
             rows:4
             size_hint:None,None
-            size:root.width/3,root.height*2/5
-            pos:root.width*1/2,root.height/3-self.height/2
+            size:300,200
+            pos:30,60
             AbsMoveBtn:
                 id:_fwdBtn
                 text:'Goto 0xFFFFFF'
@@ -86,10 +70,32 @@
                 id:_cmdpos
         GridLayout:
             cols:2
+            rows:3
+            size_hint:None,None
+            size:root.width/3,root.height/5
+            pos:450,300
+            Label:
+                text:"Slave Address"
+            TextInput:
+                id:_slaveaddr
+            Label:
+                text:"Register Address"
+            TextInput:
+                id:_regaddr
+            Label:
+                text:""
+            RegReadBtn:
+                id:_regReadBtn
+                slaveaddr: _slaveaddr
+                regaddr:_regaddr
+                text:'Read Register'
+                on_press:self.readreg(self.slaveaddr.text, self.regaddr.text)
+        GridLayout:
+            cols:2
             rows:4
             size_hint:None,None
             size:root.width/3,root.height/5
-            pos:root.width*1/2,-self.height/2
+            pos:450,60
             Label:
                 text:"Slave Address"
             TextInput:
@@ -114,15 +120,15 @@
     Label:
         id: cmd_lbl
         size_hint:None,None
-        size:root.width,root.height/15
-        pos:0,root.height/15
+        size:root.width,15
+        pos:0,15
         halign: 'left'
         text_size: self.size
-        text:"Last Command: "
+        text:"Last Command: " + str(root.width) + "," + str(root.height)
     Label:
         id: status_lbl
         size_hint:None,None
-        size:root.width,root.height/15
+        size:root.width,15
         pos:0,0
         halign: 'left'
         text_size: self.size
