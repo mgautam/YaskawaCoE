@@ -43,10 +43,32 @@
             StsLabel:
                 id:_control
         GridLayout:
+            cols:2
+            rows:3
+            size_hint:None,None
+            size:root.width/3,root.height/5
+            pos:root.width*1/2,2*root.height/3-self.height/2
+            Label:
+                text:"Slave Address"
+            TextInput:
+                id:_slaveaddr
+            Label:
+                text:"Register Address"
+            TextInput:
+                id:_regaddr
+            Label:
+                text:""
+            RegReadBtn:
+                id:_regReadBtn
+                slaveaddr: _slaveaddr
+                regaddr:_regaddr
+                text:'Read Register'
+                on_press:self.readreg(self.slaveaddr.text, self.regaddr.text)
+        GridLayout:
             rows:4
             size_hint:None,None
             size:root.width/3,root.height*2/5
-            pos:root.width*1/2,root.height/2-self.height/2
+            pos:root.width*1/2,root.height/3-self.height/2
             AbsMoveBtn:
                 id:_fwdBtn
                 text:'Goto 0xFFFFFF'
@@ -62,6 +84,33 @@
                 on_press:self.move_cmdpos(self.cmdpos.text)
             TextInput:
                 id:_cmdpos
+        GridLayout:
+            cols:2
+            rows:4
+            size_hint:None,None
+            size:root.width/3,root.height/5
+            pos:root.width*1/2,-self.height/2
+            Label:
+                text:"Slave Address"
+            TextInput:
+                id:_coslaveaddr
+            Label:
+                text:"Index"
+            TextInput:
+                id:_coindex
+            Label:
+                text:"SubIndex"
+            TextInput:
+                id:_cosubindex
+            Label:
+                text:""
+            ReadCOBtn:
+                id:_ReadCOBtn
+                coslaveaddr: _coslaveaddr
+                coindex:_coindex
+                cosubindex:_cosubindex
+                text:'Read CO Parameter'
+                on_press:self.readcoparam(self.coslaveaddr.text, self.coindex.text, self.cosubindex.text)
     Label:
         id: cmd_lbl
         size_hint:None,None

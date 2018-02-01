@@ -58,8 +58,12 @@ void coeController(char *ifname)
             ec_config_map(&IOmap);
             printf("Slaves mapped, state to SAFE_OP requested.\n");
 
-            /* Configure Distributed Clock mechanism */
+            printf("System Time Difference in slave %d: %d\n\r", 1,ycoe_read_sysdeltatime(1));
+            printf("System Time Difference in slave %d: %d\n\r", 2,ycoe_read_sysdeltatime(2));
+           /* Configure Distributed Clock mechanism */
             ec_configdc();
+            printf("System Time Difference in slave %d: %d\n\r", 1,ycoe_read_sysdeltatime(1));
+            printf("System Time Difference in slave %d: %d\n\r", 2,ycoe_read_sysdeltatime(2));
 
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
@@ -286,10 +290,10 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 	void *context = zmq_ctx_new();
 	void *responder = zmq_socket(context, ZMQ_REP);
 	int rc = zmq_bind(responder, "tcp://*:5555");
-	char buffer[10];
+	char buffer[15];
 
 	while (1) {
-    zmq_recv(responder, buffer, 10, 0);
+    zmq_recv(responder, buffer, 15, 0);
 #ifdef _WIN32
     WaitForSingleObject(IOmutex, INFINITE);
 #else
@@ -299,6 +303,17 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       DINT *x = (DINT *)(buffer + 1);
       ycoe_set_slave_position(1, *x);//Vulnerable to racing conditions
       pos_cmd_sem++;
+    }
+    else if (buffer[0] == 6) {
+      INT *slaveaddr = (INT *)(buffer + 1);
+      INT *regaddr = (INT *)(buffer + 1+4);
+      printf("Slave %x Register %x Content = %x\n\r",*slaveaddr,*regaddr,ycoe_readreg_dint(*slaveaddr, *regaddr));
+    }
+    else if (buffer[0] == 9) {
+      INT *slaveaddr = (INT *)(buffer + 1);
+      INT *index = (INT *)(buffer + 1+4);
+      INT *subindex = (INT *)(buffer + 1+4+4);
+      printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",*slaveaddr,*index,*subindex,ycoe_readCOparam(*slaveaddr, *index, *subindex));
     }
 
     zmq_send(responder, guiIOmap, 2+iloop+oloop, 0);

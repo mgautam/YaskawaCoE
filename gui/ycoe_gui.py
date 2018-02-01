@@ -44,6 +44,30 @@ class CmdPosBtn(Button):
         message = ctrlwindow.socket.recv()
         #print("Received reply %s [ %s ]" % (cmdmsg, message))
 
+class RegReadBtn(Button):
+    def readreg(self, slaveaddr, regaddr):
+        ctrlwindow=self.parent.parent.parent
+        islaveaddr=int(slaveaddr)
+        iregaddr=int(regaddr)
+        if islaveaddr > 0xFFFF:
+            islaveaddr = 0xFFFF
+        if iregaddr > 0xFFFF:
+            iregaddr = 0xFFFF
+        ctrlwindow.socket.send(struct.pack('<BII',6,islaveaddr,iregaddr))
+        message = ctrlwindow.socket.recv()
+
+class ReadCOBtn(Button):
+    def readcoparam(self, slaveaddr, index, subindex):
+        ctrlwindow=self.parent.parent.parent
+        islaveaddr=int(slaveaddr)
+        iindex=int(index)
+        isubindex=int(subindex)
+        if islaveaddr > 0xFFFF:
+            islaveaddr = 0xFFFF
+        if iindex > 0xFFFF:
+            iindex = 0xFFFF
+        ctrlwindow.socket.send(struct.pack('<BIII',9,islaveaddr,iindex,isubindex))
+        message = ctrlwindow.socket.recv()
 
 class AbsGoBtn(Button):
     def move_absolute(self, distance):
@@ -57,23 +81,31 @@ class controlWindow(FloatLayout):
     context=None
     socket=None
     def __init__(self, **kwargs):
+        supret = super().__init__(**kwargs)
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect("tcp://localhost:5555")
-        Clock.schedule_interval(self._zmq_read, .9)
-        return super().__init__(**kwargs)
+        Clock.schedule_once(self._zmq_read, .9)
+        self.statuslbl.text="Status: Couldn't Connect to Server! Please restart application..."
+        return supret
 
     def _zmq_read(self, dt):
         try:
             self.socket.send_string("Request")
             data = self.socket.recv()
+            self.statuslbl.text="Status:"
             #self.possts.text=''.join('{:02x}'.format(x) for x in data[4:8])
             self.postar.text=str(int.from_bytes(data[10:14],byteorder='little'))
             self.possts.text=str(int.from_bytes(data[4:8],byteorder='little'))
-            self.statusword.text=''.join('{:02x}'.format(x) for x in data[2:4])
-            self.controlword.text=''.join('{:02x}'.format(x) for x in data[8:10])
+            self.statusword.text=''.join('{:02x}'.format(x) for x in reversed(data[2:4]))
+            #self.statusword.text=str(int.from_bytes(data[2:4],byteorder='little'))
+            #self.statusword.text=str(struct.unpack("<H",data[2:4]))
+            self.controlword.text=''.join('{:02x}'.format(x) for x in reversed(data[8:10]))
+            #self.controlword.text=str(int.from_bytes(data[8:10],byteorder='little'))
+            Clock.schedule_once(self._zmq_read, .9)
         except zmq.ZMQError:
-            pass
+            self.statuslbl.text="Status: Couldn't Connect to Server! Please restart application..."
+            return
 
 class ControlApp(App):
     def build(self):
