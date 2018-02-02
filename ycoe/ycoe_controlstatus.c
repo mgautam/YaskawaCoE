@@ -1,3 +1,9 @@
+/** \file
+ * \brief YaskawaCoE Control and Status Access
+ *
+ * (c)Gautam Manoharan 2017 - 2018
+ */
+
 #include <stdio.h>
 #include "ycoetype.h"
 #include "ycoe_controlstatus.h"

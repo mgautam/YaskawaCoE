@@ -137,25 +137,30 @@ void coeController(char *ifname)
                     else if(ycoe_checkstatus(1,SW_SWITCHED_ON))
                     {
                         ycoe_setcontrolword(1,CW_ENABLEOP);
-                        final_position = 81920;
+                        final_position = 181920;
                         if (pos_cmd_sem == 0) pos_cmd_sem++;
                         //ycoe_ipm_set_position (1,8192);
                     }
                     else {
                       if (ycoe_checkstatus(1,SW_OP_ENABLED))
                       {
-                        if (ycoe_ipm_checkcontrol(1, CW_IPM_DISABLE) || \
+                        if (pos_cmd_sem > 0) {
+                          ycoe_ipm_set_position(1, final_position);
+                          pos_cmd_sem--;
+                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_IPM_ENABLE);
+                        }
+/*                        if (ycoe_ipm_checkcontrol(1, CW_IPM_DISABLE) || \
                             (ycoe_ipm_checkstatus(1,SW_IPM_ACTIVE)==0)) {
                           ycoe_setcontrolword(1,CW_ENABLEOP | CW_IPM_ENABLE);
                         }
                         if (pos_cmd_sem > 0) {
                           /* Add interpolation calculations */
-                          printf("cycle %d: pos_cmd_sem>0\n\r",i);
+/*                          printf("cycle %d: pos_cmd_sem>0\n\r",i);
                           if (ycoe_ipm_goto_position(1,final_position)) {
                             pos_cmd_sem--;
                           }
                         }
-                      }
+*/                    }
 
                     }
 

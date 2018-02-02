@@ -1,3 +1,9 @@
+/** \file
+ * \brief YaskawaCoE Profile Position mode specific access
+ *
+ * (c)Gautam Manoharan 2017 - 2018
+ */
+
 #include <stdio.h>
 #include "ethercat.h"
 #include "ycoetype.h"
