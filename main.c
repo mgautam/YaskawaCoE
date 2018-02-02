@@ -29,7 +29,8 @@ pthread_mutex_t IOmutex;
 #endif
 
 char guiIOmap[4096];
-int pos_cmd_sem = 1; // Position Command Semaphore
+int pos_cmd_sem = 0; // Position Command Semaphore
+DINT final_position = 0;
 char  oloop, iloop;
 char IOmap[4096];
 int expectedWKC;
@@ -61,12 +62,13 @@ void coeController(char *ifname)
             /* Configure Distributed Clock mechanism */
             ec_configdc();
             /* Check & Set Profile Position Mode Parameters */
-            //ycoe_ppm_get_parameters();
-            ycoe_ppm_setup(1);
+            ycoe_ipm_get_parameters();
+            ycoe_ipm_setup(1);
+            ycoe_ipm_get_parameters();
             printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
-            ycoe_set_mode_of_operation(PROFILE_POSITION_MODE);
+            ycoe_set_mode_of_operation(INTERPOLATED_POSITION_MODE);
             printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
-            ycoe_ppm_set_velocity(502400);
+            ycoe_ipm_set_parameters(1000,1000);
 
 
 
@@ -120,7 +122,12 @@ void coeController(char *ifname)
 				        i = 0;
         				while(1)
                 {
-				          	i++;
+#ifdef _WIN32
+           						WaitForSingleObject(IOmutex, INFINITE);
+#else
+                      pthread_mutex_lock(&IOmutex);
+#endif
+ 				          	i++;
                     //ycoe_printstatus(1);
 
                     if(ycoe_checkstatus(1,SW_SWITCHON_DISABLED))
@@ -130,21 +137,24 @@ void coeController(char *ifname)
                     else if(ycoe_checkstatus(1,SW_SWITCHED_ON))
                     {
                         ycoe_setcontrolword(1,CW_ENABLEOP);
-                        ycoe_set_slave_position (1,0xFFFFFF);
+                        final_position = 81920;
+                        if (pos_cmd_sem == 0) pos_cmd_sem++;
+                        //ycoe_ipm_set_position (1,8192);
                     }
                     else {
                       if (ycoe_checkstatus(1,SW_OP_ENABLED))
                       {
-
-                        if (ycoe_ppm_checkcontrol(1, CW_PPM_SNPI2) && \
-                            ycoe_ppm_checkstatus(1,SW_SETPOINT_ACK)) {
-                          pos_cmd_sem--;
-                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI1);
+                        if (ycoe_ipm_checkcontrol(1, CW_IPM_DISABLE) || \
+                            (ycoe_ipm_checkstatus(1,SW_IPM_ACTIVE)==0)) {
+                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_IPM_ENABLE);
                         }
-                        else if ((pos_cmd_sem>0) && ycoe_ppm_checkcontrol(1, CW_PPM_SNPI1))
-                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI2);
-                        else if (pos_cmd_sem>0)// Only in PP mode, this means CW = 0x0F
-                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI1);
+                        if (pos_cmd_sem > 0) {
+                          /* Add interpolation calculations */
+                          printf("cycle %d: pos_cmd_sem>0\n\r",i);
+                          if (ycoe_ipm_goto_position(1,final_position)) {
+                            pos_cmd_sem--;
+                          }
+                        }
                       }
 
                     }
@@ -154,22 +164,12 @@ void coeController(char *ifname)
 
                     if(wkc >= expectedWKC)
                     {
-#ifdef _WIN32
-           						WaitForSingleObject(IOmutex, INFINITE);
-#else
-                      pthread_mutex_lock(&IOmutex);
-#endif
-                      guiIOmap[0] = iloop;
+                     guiIOmap[0] = iloop;
           						guiIOmap[1] = oloop;
 					          	for (j = 2; j < 2+iloop; j++)
           							guiIOmap[j] = ec_slave[0].inputs[j-2];
 					          	for (j = 2+iloop; j < 2+iloop+oloop; j++)
           							guiIOmap[j] = ec_slave[0].outputs[j-2-iloop];
-#ifdef _WIN32
-					          	ReleaseMutex(IOmutex);
-#else
-                      pthread_mutex_unlock(&IOmutex);
-#endif
 /*
           					  printf("PDO cycle %4d, WKC %d , T:%"PRId64"\n", i, wkc, ec_DCtime);
 
@@ -182,7 +182,12 @@ void coeController(char *ifname)
                         printf(" %2.2x", *(ec_slave[0].inputs + j));
                       printf("\n");
 */                   }
-                    osal_usleep(1000);
+#ifdef _WIN32
+					          	ReleaseMutex(IOmutex);
+#else
+                      pthread_mutex_unlock(&IOmutex);
+#endif
+                   osal_usleep(1000);
 
                 }
                 inOP = FALSE;
@@ -308,8 +313,10 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 #endif
     if (buffer[0] == 3) {
       DINT *x = (DINT *)(buffer + 1);
-      ycoe_set_slave_position(1, *x);//Vulnerable to racing conditions
+      //ycoe_ipm_set_position(1, *x);//Vulnerable to racing conditions
+      final_position = *x;
       pos_cmd_sem++;
+      printf("Requested position:%d and pos_cmd_sem=%d\n\r",final_position,pos_cmd_sem);
     }
     else if (buffer[0] == 6) {
       INT *slaveaddr = (INT *)(buffer + 1);

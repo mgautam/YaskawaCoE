@@ -26,7 +26,7 @@ int ycoe_ipm_setup(int slavenum) {
 
     /* Enable DC Mode with Sync0 Generation */
     //ycoe_writereg(slavenum, 0x980, UINT_SIZE, 0x0300);
-    ec_dcsync0(slavenum,1,1000000,0);//CycleTime=1ms, CycleShift=0
+    ec_dcsync0(slavenum,1,4000000,0);//CycleTime=1ms, CycleShift=0
     return 0;
 }
 
@@ -89,8 +89,42 @@ int ycoe_ipm_set_parameters (UDINT profile_deceleration, UDINT quick_stop_decele
     return 0;
 }
 
-int ycoe_ipm_set_position (int slavenum, DINT position) {
+int ycoe_ipm_set_position (int slavenum, DINT target_position) {
     DINT *position_pdo_address = (DINT *)(ec_slave[slavenum].outputs+2);
-    *position_pdo_address = position;
+    *position_pdo_address = target_position;
+
+    ec_SDOwrite(slavenum,0x60C1,1,0,DINT_SIZE,&target_position,EC_TIMEOUTRXM);
+
     return 0;
+}
+int ycoe_ipm_add_position (int slavenum, DINT position) {
+    DINT *target_position_pdo = (DINT *)(ec_slave[slavenum].outputs+2);
+    DINT *current_position_pdo = (DINT *)(ec_slave[slavenum].inputs+2);
+    *target_position_pdo = position + *current_position_pdo;
+
+    ec_SDOwrite(slavenum,0x60C1,1,0,DINT_SIZE,target_position_pdo,EC_TIMEOUTRXM);
+
+    return 0;
+}
+int ycoe_ipm_goto_position (int slavenum, DINT target_position) {
+    DINT *current_position_pdo = (DINT *)(ec_slave[slavenum].inputs+2);
+    DINT *target_position_pdo = (DINT *)(ec_slave[slavenum].outputs+2);
+
+    DINT velocity = 20000; /* 2000 counts per 4ms */
+    if ((target_position - *current_position_pdo) > velocity) {
+        *target_position_pdo = *current_position_pdo + velocity;
+        ec_SDOwrite(slavenum,0x60C1,1,0,DINT_SIZE,target_position_pdo,EC_TIMEOUTRXM);
+        printf("Goto target request: %d\n\r", *target_position_pdo);
+        return 0;
+    } else if ((target_position - *current_position_pdo) < -velocity) {
+        *target_position_pdo = *current_position_pdo - velocity;
+        ec_SDOwrite(slavenum,0x60C1,1,0,DINT_SIZE,target_position_pdo,EC_TIMEOUTRXM);
+        printf("Goto target request: %d\n\r", *target_position_pdo);
+        return 0;
+    } else {
+        *target_position_pdo = target_position;
+        ec_SDOwrite(slavenum,0x60C1,1,0,DINT_SIZE,target_position_pdo,EC_TIMEOUTRXM);
+        printf("Goto target request: %d\n\r", *target_position_pdo);
+        return 1;
+    }
 }
