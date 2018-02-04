@@ -57,47 +57,47 @@ int ycoe_ppm_checkstatus (int slavenum, UINT targetstatus) {
   return retval;
 }
 
-int ycoe_ppm_get_parameters (void) {
+int ycoe_ppm_get_parameters (int slavenum) {
     UDINT udintbuff;
     int udintsize = UDINT_SIZE;
 
-    ec_SDOread(1,0x6081,0,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
+    ec_SDOread(slavenum,0x6081,0,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
     printf("Profile Velocity: %x [vel. units](incs/sec)\r\n",udintbuff);
-    ec_SDOread(1,0x607F,0,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
+    ec_SDOread(slavenum,0x607F,0,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
     printf("Max Profile Velocity: %d [vel. units](incs/sec)\r\n",udintbuff);
 
-    ec_SDOread(1,0x6083,0,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
+    ec_SDOread(slavenum,0x6083,0,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
     printf("Profile Acceleration: %d [acc. units](incs/sec2)\r\n",udintbuff);
-    ec_SDOread(1,0x6084,0,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
+    ec_SDOread(slavenum,0x6084,0,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
     printf("Profile Deceleration: %d [acc. units](incs/sec2)\r\n",udintbuff);
-    ec_SDOread(1,0x6085,0,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
+    ec_SDOread(slavenum,0x6085,0,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
     printf("Quick Stop Deceleration: %d [acc. units](incs/sec2)\r\n",udintbuff);
 
     return 0;
 }
 
-int ycoe_ppm_set_velocity (UDINT profile_velocity) {
-    ec_SDOwrite(1,0x6081,0,0,UDINT_SIZE,&profile_velocity,EC_TIMEOUTRXM);
+int ycoe_ppm_set_velocity (int slavenum, UDINT profile_velocity) {
+    ec_SDOwrite(slavenum,0x6081,0,0,UDINT_SIZE,&profile_velocity,EC_TIMEOUTRXM);
     return 0;
 }
-int ycoe_ppm_set_acceleration (UDINT profile_acceleration) {
-    ec_SDOwrite(1,0x6083,0,0,UDINT_SIZE,&profile_acceleration,EC_TIMEOUTRXM);
+int ycoe_ppm_set_acceleration (int slavenum, UDINT profile_acceleration) {
+    ec_SDOwrite(slavenum,0x6083,0,0,UDINT_SIZE,&profile_acceleration,EC_TIMEOUTRXM);
     return 0;
 }
-int ycoe_ppm_set_deceleration (UDINT profile_deceleration) {
-    ec_SDOwrite(1,0x6084,0,0,UDINT_SIZE,&profile_deceleration,EC_TIMEOUTRXM);
+int ycoe_ppm_set_deceleration (int slavenum, UDINT profile_deceleration) {
+    ec_SDOwrite(slavenum,0x6084,0,0,UDINT_SIZE,&profile_deceleration,EC_TIMEOUTRXM);
     return 0;
 }
-int ycoe_ppm_set_quick_stop_deceleration (UDINT quick_stop_deceleration) {
-    ec_SDOwrite(1,0x6085,0,0,UDINT_SIZE,&quick_stop_deceleration,EC_TIMEOUTRXM);
+int ycoe_ppm_set_quick_stop_deceleration (int slavenum, UDINT quick_stop_deceleration) {
+    ec_SDOwrite(slavenum,0x6085,0,0,UDINT_SIZE,&quick_stop_deceleration,EC_TIMEOUTRXM);
     return 0;
 }
 
-int ycoe_ppm_set_parameters (UDINT profile_velocity, UDINT profile_acceleration, UDINT profile_deceleration, UDINT quick_stop_deceleration) {
-    ycoe_ppm_set_velocity (profile_velocity);
-    ycoe_ppm_set_acceleration (profile_acceleration);
-    ycoe_ppm_set_deceleration (profile_deceleration);
-    ycoe_ppm_set_quick_stop_deceleration (quick_stop_deceleration);
+int ycoe_ppm_set_parameters (int slavenum, UDINT profile_velocity, UDINT profile_acceleration, UDINT profile_deceleration, UDINT quick_stop_deceleration) {
+    ycoe_ppm_set_velocity (slavenum,profile_velocity);
+    ycoe_ppm_set_acceleration (slavenum,profile_acceleration);
+    ycoe_ppm_set_deceleration (slavenum,profile_deceleration);
+    ycoe_ppm_set_quick_stop_deceleration (slavenum,quick_stop_deceleration);
 
     return 0;
 }

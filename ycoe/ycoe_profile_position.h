@@ -28,13 +28,13 @@ int ycoe_ppm_setup(int slavenum);
 int ycoe_ppm_checkcontrol (int slavenum, UINT targetcontrol);
 int ycoe_ppm_checkstatus(int slavenum, UINT targetstatus);
 
-int ycoe_ppm_get_parameters(void);
+int ycoe_ppm_get_parameters(int slavenum);
 
-int ycoe_ppm_set_velocity (UDINT profile_velocity);
-int ycoe_ppm_set_acceleration (UDINT profile_acceleration);
-int ycoe_ppm_set_deceleration (UDINT profile_deceleration);
-int ycoe_ppm_set_quick_stop_deceleration (UDINT quick_stop_deceleration);
-int ycoe_ppm_set_parameters (UDINT profile_velocity, UDINT profile_acceleration, UDINT profile_deceleration, UDINT quick_stop_deceleration);
+int ycoe_ppm_set_velocity (int slavenum,UDINT profile_velocity);
+int ycoe_ppm_set_acceleration (int slavenum,UDINT profile_acceleration);
+int ycoe_ppm_set_deceleration (int slavenum,UDINT profile_deceleration);
+int ycoe_ppm_set_quick_stop_deceleration (int slavenum,UDINT quick_stop_deceleration);
+int ycoe_ppm_set_parameters (int slavenum,UDINT profile_velocity, UDINT profile_acceleration, UDINT profile_deceleration, UDINT quick_stop_deceleration);
 
 int ycoe_ppm_set_position (int slavenum, DINT position);
 #endif

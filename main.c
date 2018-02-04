@@ -62,13 +62,13 @@ void coeController(char *ifname)
             /* Configure Distributed Clock mechanism */
             ec_configdc();
             /* Check & Set Profile Position Mode Parameters */
-            ycoe_ipm_get_parameters();
+            ycoe_ipm_get_parameters(1);
             ycoe_ipm_setup(1);
-            ycoe_ipm_get_parameters();
+            ycoe_ipm_get_parameters(1);
             printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
-            ycoe_set_mode_of_operation(INTERPOLATED_POSITION_MODE);
+            ycoe_set_mode_of_operation(1,INTERPOLATED_POSITION_MODE);
             printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
-            ycoe_ipm_set_parameters(1000,1000);
+            ycoe_ipm_set_parameters(1,1000,1000);
 
 
 
@@ -169,12 +169,27 @@ void coeController(char *ifname)
 
                     if(wkc >= expectedWKC)
                     {
-                     guiIOmap[0] = iloop;
+                      int usedbytes = 0;
+                      memcpy(guiIOmap, &ec_slavecount, 4);
+                      usedbytes = 4;
+                      for (int islaveindex = 1; islaveindex < ec_slavecount; islaveindex++) {
+                      memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Ibytes), 4);
+                      usedbytes += 4;
+                      memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Obytes), 4);
+                      usedbytes += 4;
+                      memcpy(guiIOmap+usedbytes,ec_slave[islaveindex].inputs, ec_slave[islaveindex].Ibytes);
+                      usedbytes += ec_slave[islaveindex].Ibytes;
+                      memcpy(guiIOmap+usedbytes,ec_slave[islaveindex].outputs, ec_slave[islaveindex].Obytes);
+                      usedbytes += ec_slave[islaveindex].Obytes;
+
+                      }
+/*                    guiIOmap[0] = iloop;
           						guiIOmap[1] = oloop;
 					          	for (j = 2; j < 2+iloop; j++)
           							guiIOmap[j] = ec_slave[0].inputs[j-2];
 					          	for (j = 2+iloop; j < 2+iloop+oloop; j++)
           							guiIOmap[j] = ec_slave[0].outputs[j-2-iloop];
+*/
 /*
           					  printf("PDO cycle %4d, WKC %d , T:%"PRId64"\n", i, wkc, ec_DCtime);
 
@@ -311,6 +326,12 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 
 	while (1) {
     zmq_recv(responder, buffer, 15, 0);
+    
+    ec_slave[1].inputs = malloc(12);
+    ec_slave[2].inputs = malloc(12);
+    ec_slave[1].outputs = malloc(12);
+    ec_slave[2].outputs = malloc(12);
+    
 #ifdef _WIN32
     WaitForSingleObject(IOmutex, INFINITE);
 #else
@@ -334,8 +355,32 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       INT *subindex = (INT *)(buffer + 1+4+4);
       printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",*slaveaddr,*index,*subindex,ycoe_readCOparam(*slaveaddr, *index, *subindex));
     }
+        
+    ec_slavecount = 2;
+                      int usedbytes = 0;
+                      memcpy(guiIOmap, &ec_slavecount, 4);
+                      usedbytes = 4;
+                      for (int islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
+                      ec_slave[islaveindex].Ibytes = 6;
+                      ec_slave[islaveindex].Obytes = 6;
+                      ec_slave[islaveindex].inputs[0] = 0xEF;
+                      ec_slave[islaveindex].inputs[1] = 0xBE;
+                      ec_slave[islaveindex].inputs[2] = 123;
+                      ec_slave[islaveindex].outputs[0] = 0xEF;
+                      ec_slave[islaveindex].outputs[1] = 0xEF;
+                      ec_slave[islaveindex].outputs[2] = 213;
 
-    zmq_send(responder, guiIOmap, 2+iloop+oloop, 0);
+                      memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Ibytes), 4);
+                      usedbytes += 4;
+                      memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Obytes), 4);
+                      usedbytes += 4;
+                      memcpy(guiIOmap+usedbytes,ec_slave[islaveindex].inputs, ec_slave[islaveindex].Ibytes);
+                      usedbytes += ec_slave[islaveindex].Ibytes;
+                      memcpy(guiIOmap+usedbytes,ec_slave[islaveindex].outputs, ec_slave[islaveindex].Obytes);
+                      usedbytes += ec_slave[islaveindex].Obytes;
+
+                      }
+    zmq_send(responder, guiIOmap, usedbytes, 0);
 #ifdef _WIN32
     ReleaseMutex(IOmutex);
 #else
@@ -369,9 +414,11 @@ int main(int argc, char *argv[])
     //      pthread_create( &thread1, NULL, (void *) &ecatcheck, (void*) &ctime);
     osal_thread_create(&thread1, 128000, &ecatcheck, (void*) &ctime);
     // thread to handle gui application requests
-    osal_thread_create(&thread2, 128000, &controlserver, (void*)&ctime);
+    //osal_thread_create(&thread2, 128000, &controlserver, (void*)&ctime);
     /* start cyclic part */
-    coeController(argv[1]);
+    osal_thread_create(&thread2, 128000, &coeController, argv[1]);
+    //coeController(argv[1]);
+    controlserver(argv[1]);
   }
   else
   {

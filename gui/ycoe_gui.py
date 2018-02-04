@@ -95,15 +95,32 @@ class controlWindow(FloatLayout):
         try:
             self.socket.send_string("Request")
             data = self.socket.recv()
-            self.statuslbl.text="Status:"
-            #self.possts.text=''.join('{:02x}'.format(x) for x in data[4:8])
-            self.postar.text=str(int.from_bytes(data[10:14],byteorder='little'))
-            self.possts.text=str(int.from_bytes(data[4:8],byteorder='little'))
-            self.statusword.text=''.join('{:02x}'.format(x) for x in reversed(data[2:4]))
-            #self.statusword.text=str(int.from_bytes(data[2:4],byteorder='little'))
-            #self.statusword.text=str(struct.unpack("<H",data[2:4]))
-            self.controlword.text=''.join('{:02x}'.format(x) for x in reversed(data[8:10]))
-            #self.controlword.text=str(int.from_bytes(data[8:10],byteorder='little'))
+            numslaves=int.from_bytes(data[0:4],byteorder='little')
+            self.statuslbl.text="Status: Slavecount = "+ str(numslaves)
+            #frloc = framelocation
+            frloc = 4
+            inputbytes=int.from_bytes(data[frloc:frloc+4],byteorder='little')
+            outputbytes=int.from_bytes(data[frloc+4:frloc+8],byteorder='little')
+            idata = data[frloc+8:frloc+8+inputbytes]
+            odata = data[frloc+8+inputbytes:frloc+8+inputbytes+outputbytes]
+
+            self.statusword1.text=''.join('{:02x}'.format(x) for x in reversed(idata[0:2]))
+            self.possts1.text=str(int.from_bytes(idata[2:6],byteorder='little'))
+            self.controlword1.text=''.join('{:02x}'.format(x) for x in reversed(odata[0:2]))
+            self.postar1.text=str(int.from_bytes(odata[2:6],byteorder='little'))
+
+            #frloc = framelocation
+            frloc = 12+inputbytes+outputbytes
+            inputbytes=int.from_bytes(data[frloc:frloc+4],byteorder='little')
+            outputbytes=int.from_bytes(data[frloc+4:frloc+8],byteorder='little')
+            idata = data[frloc+8:frloc+8+inputbytes]
+            odata = data[frloc+8+inputbytes:frloc+8+inputbytes+outputbytes]
+
+            self.statusword2.text=''.join('{:02x}'.format(x) for x in reversed(idata[0:2]))
+            self.possts2.text=str(int.from_bytes(idata[2:6],byteorder='little'))
+            self.controlword2.text=''.join('{:02x}'.format(x) for x in reversed(odata[0:2]))
+            self.postar2.text=str(int.from_bytes(odata[2:6],byteorder='little'))
+
             Clock.schedule_once(self._zmq_read, .9)
         except zmq.ZMQError:
             self.statuslbl.text="Status: Couldn't Connect to Server! Please restart application..."
@@ -115,6 +132,7 @@ class ControlApp(App):
         return controlWindow()
 
 if __name__ == '__main__':
-    Config.set('graphics', 'width',  900)
+    Config.set('graphics', 'width',  1080)
     Config.set('graphics', 'height', 600)
+    Window.size = (1080,600)
     ControlApp().run()

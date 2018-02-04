@@ -56,7 +56,7 @@ int ycoe_ipm_checkstatus (int slavenum, UINT targetstatus) {
   return retval;
 }
 
-int ycoe_ipm_get_parameters (void) {
+int ycoe_ipm_get_parameters (int slavenum) {
     UDINT udintbuff;
     int udintsize = UDINT_SIZE;
     USINT usintbuff;
@@ -64,33 +64,33 @@ int ycoe_ipm_get_parameters (void) {
     SINT sintbuff;
     int sintsize = SINT_SIZE;
 
-    ec_SDOread(1,0x60C1,1,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
+    ec_SDOread(slavenum,0x60C1,1,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
     printf("Interpolation Data: %d [pos. units](incs)\r\n",udintbuff);
-    ec_SDOread(1,0x60C2,1,0,&usintsize,&usintbuff,EC_TIMEOUTRXM);
+    ec_SDOread(slavenum,0x60C2,1,0,&usintsize,&usintbuff,EC_TIMEOUTRXM);
     printf("Interpolation time period: %d \r\n",usintbuff);
-    ec_SDOread(1,0x60C2,2,0,&sintsize,&sintbuff,EC_TIMEOUTRXM);
+    ec_SDOread(slavenum,0x60C2,2,0,&sintsize,&sintbuff,EC_TIMEOUTRXM);
     printf("Interpolation time index: %d \r\n",sintbuff);
 
-    ec_SDOread(1,0x6084,0,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
+    ec_SDOread(slavenum,0x6084,0,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
     printf("Profile Deceleration: %d [acc. units](incs/sec2)\r\n",udintbuff);
-    ec_SDOread(1,0x6085,0,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
+    ec_SDOread(slavenum,0x6085,0,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
     printf("Quick Stop Deceleration: %d [acc. units](incs/sec2)\r\n",udintbuff);
 
     return 0;
 }
 
-int ycoe_ipm_set_deceleration (UDINT profile_deceleration) {
-    ec_SDOwrite(1,0x6084,0,0,UDINT_SIZE,&profile_deceleration,EC_TIMEOUTRXM);
+int ycoe_ipm_set_deceleration (int slavenum, UDINT profile_deceleration) {
+    ec_SDOwrite(slavenum,0x6084,0,0,UDINT_SIZE,&profile_deceleration,EC_TIMEOUTRXM);
     return 0;
 }
-int ycoe_ipm_set_quick_stop_deceleration (UDINT quick_stop_deceleration) {
-    ec_SDOwrite(1,0x6085,0,0,UDINT_SIZE,&quick_stop_deceleration,EC_TIMEOUTRXM);
+int ycoe_ipm_set_quick_stop_deceleration (int slavenum, UDINT quick_stop_deceleration) {
+    ec_SDOwrite(slavenum,0x6085,0,0,UDINT_SIZE,&quick_stop_deceleration,EC_TIMEOUTRXM);
     return 0;
 }
 
-int ycoe_ipm_set_parameters (UDINT profile_deceleration, UDINT quick_stop_deceleration) {
-    ycoe_ipm_set_deceleration (profile_deceleration);
-    ycoe_ipm_set_quick_stop_deceleration (quick_stop_deceleration);
+int ycoe_ipm_set_parameters (int slavenum, UDINT profile_deceleration, UDINT quick_stop_deceleration) {
+    ycoe_ipm_set_deceleration (slavenum,profile_deceleration);
+    ycoe_ipm_set_quick_stop_deceleration (slavenum,quick_stop_deceleration);
 
     return 0;
 }

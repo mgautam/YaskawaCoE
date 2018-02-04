@@ -25,11 +25,11 @@ int ycoe_ipm_setup(int slavenum);
 int ycoe_ipm_checkcontrol (int slavenum, UINT targetcontrol);
 int ycoe_ipm_checkstatus(int slavenum, UINT targetstatus);
 
-int ycoe_ipm_get_parameters(void);
+int ycoe_ipm_get_parameters(int slavenum);
 
-int ycoe_ipm_set_deceleration (UDINT profile_deceleration);
-int ycoe_ipm_set_quick_stop_deceleration (UDINT quick_stop_deceleration);
-int ycoe_ipm_set_parameters (UDINT profile_deceleration, UDINT quick_stop_deceleration);
+int ycoe_ipm_set_deceleration (int slavenum, UDINT profile_deceleration);
+int ycoe_ipm_set_quick_stop_deceleration (int slavenum, UDINT quick_stop_deceleration);
+int ycoe_ipm_set_parameters (int slavenum, UDINT profile_deceleration, UDINT quick_stop_deceleration);
 
 int ycoe_ipm_set_position (int slavenum, DINT target_position);
 int ycoe_ipm_add_position (int slavenum, DINT position);

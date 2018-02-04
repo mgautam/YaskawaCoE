@@ -6,18 +6,23 @@
     valign:'middle'
 
 <controlWindow@FloatLayout>:
-    controlarea: ctrl_area
     cmdlbl:cmd_lbl
     statuslbl:status_lbl
-    fwdbtn:_fwdBtn
-    bwdbtn:_bwdBtn
-    cmdposbtn:_cmdposBtn
-    postar:_postar
-    possts:_possts
-    statusword:_status
-    controlword:_control
+
+    postar1:_postar1
+    possts1:_possts1
+    statusword1:_status1
+    controlword1:_control1
+    cmdposbtn1:_cmdposBtn1
+
+    postar2:_postar2
+    possts2:_possts2
+    statusword2:_status2
+    controlword2:_control2
+    cmdposbtn2:_cmdposBtn2
+
+
     RelativeLayout:
-        id: ctrl_area
         size_hint:None,None
         size:root.width,root.height-30
         pos:0,30
@@ -35,45 +40,91 @@
             StsLabel:
                 text:"Target Position"
             StsLabel:
-                id:_postar
+                id:_postar1
             StsLabel:
                 text:"Current Position"
             StsLabel:
-                id:_possts
+                id:_possts1
             StsLabel:
                 text:"StatusWord"
             StsLabel:
-                id:_status
+                id:_status1
             StsLabel:
                 text:"ControlWord"
             StsLabel:
-                id:_control
+                id:_control1
         GridLayout:
             rows:4
             size_hint:None,None
             size:300,200
             pos:30,60
             AbsMoveBtn:
-                id:_fwdBtn
                 text:'Goto 0xFFFFFF'
                 on_press:self.move_absolute(b'\x03\xFF\xFF\xFF\x00')
             AbsMoveBtn:
-                id:_bwdBtn
                 text:'Home ZeroPos'
                 on_press:self.move_absolute(b'\x03\x00\x00\x00\x00')
             CmdPosBtn:
-                id:_cmdposBtn
-                cmdpos:_cmdpos
+                id:_cmdposBtn1
+                cmdpos:_cmdpos1
                 text:'Goto'
-                on_press:self.move_cmdpos(self.cmdpos.text)
+                on_press:self.move_cmdpos(self.cmdpos1.text)
             TextInput:
-                id:_cmdpos
+                id:_cmdpos1
+        Label:
+            size_hint:None,None
+            size:160,30
+            pos:430,510
+            text: "Slave 2"
+        GridLayout:
+            cols:2
+            rows:4
+            size_hint:None,None
+            size:300,200
+            pos:360,300
+            StsLabel:
+                text:"Target Position"
+            StsLabel:
+                id:_postar2
+            StsLabel:
+                text:"Current Position"
+            StsLabel:
+                id:_possts2
+            StsLabel:
+                text:"StatusWord"
+            StsLabel:
+                id:_status2
+            StsLabel:
+                text:"ControlWord"
+            StsLabel:
+                id:_control2
+        GridLayout:
+            rows:4
+            size_hint:None,None
+            size:300,200
+            pos:360,60
+            AbsMoveBtn:
+                text:'Goto 0xFFFFFF'
+                on_press:self.move_absolute(b'\x03\xFF\xFF\xFF\x00')
+            AbsMoveBtn:
+                text:'Home ZeroPos'
+                on_press:self.move_absolute(b'\x03\x00\x00\x00\x00')
+            CmdPosBtn:
+                id:_cmdposBtn2
+                cmdpos:_cmdpos2
+                text:'Goto'
+                on_press:self.move_cmdpos(self.cmdpos1.text)
+            TextInput:
+                id:_cmdpos2
+
+
+
         GridLayout:
             cols:2
             rows:3
             size_hint:None,None
             size:root.width/3,root.height/5
-            pos:450,300
+            pos:690,300
             Label:
                 text:"Slave Address"
             TextInput:
@@ -95,7 +146,7 @@
             rows:4
             size_hint:None,None
             size:root.width/3,root.height/5
-            pos:450,60
+            pos:690,60
             Label:
                 text:"Slave Address"
             TextInput:

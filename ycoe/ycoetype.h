@@ -33,6 +33,6 @@ enum {
   CYCLIC_SYNC_TORQUE_MODE     = 10
 } ycoe_operation_modes;
 
-int ycoe_set_mode_of_operation (SINT mode_of_operation);
+int ycoe_set_mode_of_operation (int slavenum, SINT mode_of_operation);
 
 #endif
