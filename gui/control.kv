@@ -9,17 +9,15 @@
     cmdlbl:cmd_lbl
     statuslbl:status_lbl
 
-    postar1:_postar1
-    possts1:_possts1
+    tarpos1:_tarpos1
+    curpos1:_curpos1
     statusword1:_status1
     controlword1:_control1
-    cmdposbtn1:_cmdposBtn1
 
-    postar2:_postar2
-    possts2:_possts2
+    tarpos2:_tarpos2
+    curpos2:_curpos2
     statusword2:_status2
     controlword2:_control2
-    cmdposbtn2:_cmdposBtn2
 
 
     RelativeLayout:
@@ -40,11 +38,11 @@
             StsLabel:
                 text:"Target Position"
             StsLabel:
-                id:_postar1
+                id:_tarpos1
             StsLabel:
                 text:"Current Position"
             StsLabel:
-                id:_possts1
+                id:_curpos1
             StsLabel:
                 text:"StatusWord"
             StsLabel:
@@ -60,15 +58,14 @@
             pos:30,60
             AbsMoveBtn:
                 text:'Goto 0xFFFFFF'
-                on_press:self.move_absolute(b'\x03\xFF\xFF\xFF\x00')
+                on_press:self.move_absolute(b'\x03\x01\xFF\xFF\xFF\x00')
             AbsMoveBtn:
                 text:'Home ZeroPos'
-                on_press:self.move_absolute(b'\x03\x00\x00\x00\x00')
+                on_press:self.move_absolute(b'\x03\x01\x00\x00\x00\x00')
             CmdPosBtn:
-                id:_cmdposBtn1
-                cmdpos:_cmdpos1
+                cmdpos1:_cmdpos1
                 text:'Goto'
-                on_press:self.move_cmdpos(self.cmdpos1.text)
+                on_press:self.move_cmdpos(1,self.cmdpos1.text)
             TextInput:
                 id:_cmdpos1
         Label:
@@ -85,11 +82,11 @@
             StsLabel:
                 text:"Target Position"
             StsLabel:
-                id:_postar2
+                id:_tarpos2
             StsLabel:
                 text:"Current Position"
             StsLabel:
-                id:_possts2
+                id:_curpos2
             StsLabel:
                 text:"StatusWord"
             StsLabel:
@@ -105,15 +102,14 @@
             pos:360,60
             AbsMoveBtn:
                 text:'Goto 0xFFFFFF'
-                on_press:self.move_absolute(b'\x03\xFF\xFF\xFF\x00')
+                on_press:self.move_absolute(b'\x03\x02\xFF\xFF\xFF\x00')
             AbsMoveBtn:
                 text:'Home ZeroPos'
-                on_press:self.move_absolute(b'\x03\x00\x00\x00\x00')
+                on_press:self.move_absolute(b'\x03\x02\x00\x00\x00\x00')
             CmdPosBtn:
-                id:_cmdposBtn2
-                cmdpos:_cmdpos2
+                cmdpos2:_cmdpos2
                 text:'Goto'
-                on_press:self.move_cmdpos(self.cmdpos1.text)
+                on_press:self.move_cmdpos(2,self.cmdpos2.text)
             TextInput:
                 id:_cmdpos2
 

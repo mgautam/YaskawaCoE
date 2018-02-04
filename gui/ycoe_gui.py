@@ -32,7 +32,7 @@ class AbsMoveBtn(Button):
         #print("Received reply %s [ %s ]" % (cmdmsg, message))
 
 class CmdPosBtn(Button):
-    def move_cmdpos(self, strposition):
+    def move_cmdpos(self, slavenum, strposition):
         ctrlwindow=self.parent.parent.parent
         distance=int(strposition)
         if distance>4294967295:
@@ -42,7 +42,7 @@ class CmdPosBtn(Button):
         #cmdmsg=json.dumps({"type":"absolute","distance":distance})
         #print([distance, distance.to_bytes(4, byteorder='little'), struct.pack(distance])
         #print(struct.pack('<BI',3,distance))
-        ctrlwindow.socket.send(struct.pack('<BI',3,distance))
+        ctrlwindow.socket.send(struct.pack('<BBI',3,slavenum,distance))
         message = ctrlwindow.socket.recv()
         #print("Received reply %s [ %s ]" % (cmdmsg, message))
 
@@ -55,7 +55,7 @@ class RegReadBtn(Button):
             islaveaddr = 0xFFFF
         if iregaddr > 0xFFFF:
             iregaddr = 0xFFFF
-        ctrlwindow.socket.send(struct.pack('<BII',6,islaveaddr,iregaddr))
+        ctrlwindow.socket.send(struct.pack('<BBI',6,islaveaddr,iregaddr))
         message = ctrlwindow.socket.recv()
 
 class ReadCOBtn(Button):
@@ -68,7 +68,7 @@ class ReadCOBtn(Button):
             islaveaddr = 0xFFFF
         if iindex > 0xFFFF:
             iindex = 0xFFFF
-        ctrlwindow.socket.send(struct.pack('<BIII',9,islaveaddr,iindex,isubindex))
+        ctrlwindow.socket.send(struct.pack('<BBII',9,islaveaddr,iindex,isubindex))
         message = ctrlwindow.socket.recv()
 
 class AbsGoBtn(Button):
@@ -104,10 +104,10 @@ class controlWindow(FloatLayout):
             idata = data[frloc+8:frloc+8+inputbytes]
             odata = data[frloc+8+inputbytes:frloc+8+inputbytes+outputbytes]
 
+            self.tarpos1.text=str(int.from_bytes(odata[2:6],byteorder='little'))
+            self.curpos1.text=str(int.from_bytes(idata[2:6],byteorder='little'))
             self.statusword1.text=''.join('{:02x}'.format(x) for x in reversed(idata[0:2]))
-            self.possts1.text=str(int.from_bytes(idata[2:6],byteorder='little'))
             self.controlword1.text=''.join('{:02x}'.format(x) for x in reversed(odata[0:2]))
-            self.postar1.text=str(int.from_bytes(odata[2:6],byteorder='little'))
 
             #frloc = framelocation
             frloc = 12+inputbytes+outputbytes
@@ -116,10 +116,10 @@ class controlWindow(FloatLayout):
             idata = data[frloc+8:frloc+8+inputbytes]
             odata = data[frloc+8+inputbytes:frloc+8+inputbytes+outputbytes]
 
+            self.tarpos2.text=str(int.from_bytes(odata[2:6],byteorder='little'))
+            self.curpos2.text=str(int.from_bytes(idata[2:6],byteorder='little'))
             self.statusword2.text=''.join('{:02x}'.format(x) for x in reversed(idata[0:2]))
-            self.possts2.text=str(int.from_bytes(idata[2:6],byteorder='little'))
             self.controlword2.text=''.join('{:02x}'.format(x) for x in reversed(odata[0:2]))
-            self.postar2.text=str(int.from_bytes(odata[2:6],byteorder='little'))
 
             Clock.schedule_once(self._zmq_read, .9)
         except zmq.ZMQError:

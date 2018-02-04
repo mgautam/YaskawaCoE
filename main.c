@@ -29,9 +29,10 @@ pthread_mutex_t IOmutex;
 #endif
 
 char guiIOmap[4096];
+int guiIObytes = 0;
 int pos_cmd_sem = 0; // Position Command Semaphore
 DINT final_position = 0;
-char  oloop, iloop;
+//char  oloop, iloop;
 char IOmap[4096];
 int expectedWKC;
 volatile int wkc;
@@ -82,12 +83,12 @@ void coeController(char *ifname)
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
             /* slave0 is the master. All slaves pdos are mapped to slave0 */
-            oloop = ec_slave[0].Obytes; /* Obytes are the total number of output bytes consolidated from all slaves */
-            if ((oloop == 0) && (ec_slave[0].Obits > 0)) oloop = 1;
-            if (oloop > 8) oloop = 8;
-            iloop = ec_slave[0].Ibytes; /* Ibytes are the total number of input bytes consolidated from all slaves */
-            if ((iloop == 0) && (ec_slave[0].Ibits > 0)) iloop = 1;
-            if (iloop > 8) iloop = 8;
+            //oloop = ec_slave[0].Obytes; /* Obytes are the total number of output bytes consolidated from all slaves */
+            //if ((oloop == 0) && (ec_slave[0].Obits > 0)) oloop = 1;
+            //if (oloop > 8) oloop = 8;
+            //iloop = ec_slave[0].Ibytes; /* Ibytes are the total number of input bytes consolidated from all slaves */
+            //if ((iloop == 0) && (ec_slave[0].Ibits > 0)) iloop = 1;
+            //if (iloop > 8) iloop = 8;
 
             printf("segments : %d : %d %d %d %d\n",ec_group[0].nsegments ,ec_group[0].IOsegment[0],ec_group[0].IOsegment[1],ec_group[0].IOsegment[2],ec_group[0].IOsegment[3]);
 
@@ -173,16 +174,16 @@ void coeController(char *ifname)
                       memcpy(guiIOmap, &ec_slavecount, 4);
                       usedbytes = 4;
                       for (int islaveindex = 1; islaveindex < ec_slavecount; islaveindex++) {
-                      memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Ibytes), 4);
-                      usedbytes += 4;
-                      memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Obytes), 4);
-                      usedbytes += 4;
-                      memcpy(guiIOmap+usedbytes,ec_slave[islaveindex].inputs, ec_slave[islaveindex].Ibytes);
-                      usedbytes += ec_slave[islaveindex].Ibytes;
-                      memcpy(guiIOmap+usedbytes,ec_slave[islaveindex].outputs, ec_slave[islaveindex].Obytes);
-                      usedbytes += ec_slave[islaveindex].Obytes;
-
+                          memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Ibytes), 4);
+                          usedbytes += 4;
+                          memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Obytes), 4);
+                          usedbytes += 4;
+                          memcpy(guiIOmap+usedbytes,ec_slave[islaveindex].inputs, ec_slave[islaveindex].Ibytes);
+                          usedbytes += ec_slave[islaveindex].Ibytes;
+                          memcpy(guiIOmap+usedbytes,ec_slave[islaveindex].outputs, ec_slave[islaveindex].Obytes);
+                          usedbytes += ec_slave[islaveindex].Obytes;
                       }
+                      guiIObytes = usedbytes;
 /*                    guiIOmap[0] = iloop;
           						guiIOmap[1] = oloop;
 					          	for (j = 2; j < 2+iloop; j++)
@@ -326,61 +327,33 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 
 	while (1) {
     zmq_recv(responder, buffer, 15, 0);
-    
-    ec_slave[1].inputs = malloc(12);
-    ec_slave[2].inputs = malloc(12);
-    ec_slave[1].outputs = malloc(12);
-    ec_slave[2].outputs = malloc(12);
-    
+
 #ifdef _WIN32
     WaitForSingleObject(IOmutex, INFINITE);
 #else
     pthread_mutex_lock(&IOmutex);
 #endif
     if (buffer[0] == 3) {
-      DINT *x = (DINT *)(buffer + 1);
-      //ycoe_ipm_set_position(1, *x);//Vulnerable to racing conditions
+      USINT *slaveaddr = (USINT *)(buffer + 1);
+      DINT *x = (DINT *)(buffer + 1+1);
+      //ycoe_ipm_set_position(*slaveaddr, *x);//Vulnerable to racing conditions
       final_position = *x;
       pos_cmd_sem++;
-      printf("Requested position:%d and pos_cmd_sem=%d\n\r",final_position,pos_cmd_sem);
+      printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,final_position,pos_cmd_sem);
     }
     else if (buffer[0] == 6) {
-      INT *slaveaddr = (INT *)(buffer + 1);
-      INT *regaddr = (INT *)(buffer + 1+4);
+      USINT *slaveaddr = (USINT *)(buffer + 1);
+      INT *regaddr = (INT *)(buffer + 1+1);
       printf("Slave %x Register %x Content = %x\n\r",*slaveaddr,*regaddr,ycoe_readreg_dint(*slaveaddr, *regaddr));
     }
     else if (buffer[0] == 9) {
-      INT *slaveaddr = (INT *)(buffer + 1);
-      INT *index = (INT *)(buffer + 1+4);
-      INT *subindex = (INT *)(buffer + 1+4+4);
+      USINT *slaveaddr = (USINT *)(buffer + 1);
+      INT *index = (INT *)(buffer + 1+1);
+      INT *subindex = (INT *)(buffer + 1+1+4);
       printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",*slaveaddr,*index,*subindex,ycoe_readCOparam(*slaveaddr, *index, *subindex));
     }
-        
-    ec_slavecount = 2;
-                      int usedbytes = 0;
-                      memcpy(guiIOmap, &ec_slavecount, 4);
-                      usedbytes = 4;
-                      for (int islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
-                      ec_slave[islaveindex].Ibytes = 6;
-                      ec_slave[islaveindex].Obytes = 6;
-                      ec_slave[islaveindex].inputs[0] = 0xEF;
-                      ec_slave[islaveindex].inputs[1] = 0xBE;
-                      ec_slave[islaveindex].inputs[2] = 123;
-                      ec_slave[islaveindex].outputs[0] = 0xEF;
-                      ec_slave[islaveindex].outputs[1] = 0xEF;
-                      ec_slave[islaveindex].outputs[2] = 213;
 
-                      memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Ibytes), 4);
-                      usedbytes += 4;
-                      memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Obytes), 4);
-                      usedbytes += 4;
-                      memcpy(guiIOmap+usedbytes,ec_slave[islaveindex].inputs, ec_slave[islaveindex].Ibytes);
-                      usedbytes += ec_slave[islaveindex].Ibytes;
-                      memcpy(guiIOmap+usedbytes,ec_slave[islaveindex].outputs, ec_slave[islaveindex].Obytes);
-                      usedbytes += ec_slave[islaveindex].Obytes;
-
-                      }
-    zmq_send(responder, guiIOmap, usedbytes, 0);
+    zmq_send(responder, guiIOmap, guiIObytes, 0);
 #ifdef _WIN32
     ReleaseMutex(IOmutex);
 #else
