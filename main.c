@@ -318,10 +318,14 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 #endif
     if (buffer[0] == 3) {
       USINT *slaveaddr = (USINT *)(buffer + 1);
-      DINT *targetposition = (DINT *)(buffer + 1+1);
-      ycoe_ppm_set_position(*slaveaddr, *targetposition);//Vulnerable to racing conditions
-      pos_cmd_sem[*slaveaddr]++;
-      printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
+      if (*slaveaddr <= ec_slavecount) {
+        DINT *targetposition = (DINT *)(buffer + 1+1);
+        ycoe_ppm_set_position(*slaveaddr, *targetposition);//Vulnerable to racing conditions
+        pos_cmd_sem[*slaveaddr]++;
+        printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
+      } else {
+        printf("Invalid slave address:%x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
+      }
     }
     else if (buffer[0] == 6) {
       USINT *slaveaddr = (USINT *)(buffer + 1);
