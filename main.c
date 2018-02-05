@@ -29,10 +29,8 @@ pthread_mutex_t IOmutex;
 #endif
 
 char guiIOmap[4096];
-int guiIObytes = 0;
-int pos_cmd_sem = 0; // Position Command Semaphore
-DINT final_position = 0;
-//char  oloop, iloop;
+int pos_cmd_sem = 1; // Position Command Semaphore
+char  oloop, iloop;
 char IOmap[4096];
 int expectedWKC;
 volatile int wkc;
@@ -63,13 +61,12 @@ void coeController(char *ifname)
             /* Configure Distributed Clock mechanism */
             ec_configdc();
             /* Check & Set Profile Position Mode Parameters */
-            ycoe_ipm_get_parameters(1);
-            ycoe_ipm_setup(1);
-            ycoe_ipm_get_parameters(1);
+            //ycoe_ppm_get_parameters();
+            ycoe_ppm_setup(1);
             printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
-            ycoe_set_mode_of_operation(1,INTERPOLATED_POSITION_MODE);
+            ycoe_set_mode_of_operation(PROFILE_POSITION_MODE);
             printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
-            ycoe_ipm_set_parameters(1,1000,1000);
+            ycoe_ppm_set_velocity(502400);
 
 
 
@@ -83,12 +80,12 @@ void coeController(char *ifname)
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
             /* slave0 is the master. All slaves pdos are mapped to slave0 */
-            //oloop = ec_slave[0].Obytes; /* Obytes are the total number of output bytes consolidated from all slaves */
-            //if ((oloop == 0) && (ec_slave[0].Obits > 0)) oloop = 1;
-            //if (oloop > 8) oloop = 8;
-            //iloop = ec_slave[0].Ibytes; /* Ibytes are the total number of input bytes consolidated from all slaves */
-            //if ((iloop == 0) && (ec_slave[0].Ibits > 0)) iloop = 1;
-            //if (iloop > 8) iloop = 8;
+            oloop = ec_slave[0].Obytes; /* Obytes are the total number of output bytes consolidated from all slaves */
+            if ((oloop == 0) && (ec_slave[0].Obits > 0)) oloop = 1;
+            if (oloop > 8) oloop = 8;
+            iloop = ec_slave[0].Ibytes; /* Ibytes are the total number of input bytes consolidated from all slaves */
+            if ((iloop == 0) && (ec_slave[0].Ibits > 0)) iloop = 1;
+            if (iloop > 8) iloop = 8;
 
             printf("segments : %d : %d %d %d %d\n",ec_group[0].nsegments ,ec_group[0].IOsegment[0],ec_group[0].IOsegment[1],ec_group[0].IOsegment[2],ec_group[0].IOsegment[3]);
 
@@ -123,12 +120,7 @@ void coeController(char *ifname)
 				        i = 0;
         				while(1)
                 {
-#ifdef _WIN32
-           						WaitForSingleObject(IOmutex, INFINITE);
-#else
-                      pthread_mutex_lock(&IOmutex);
-#endif
- 				          	i++;
+				          	i++;
                     //ycoe_printstatus(1);
 
                     if(ycoe_checkstatus(1,SW_SWITCHON_DISABLED))
@@ -138,30 +130,22 @@ void coeController(char *ifname)
                     else if(ycoe_checkstatus(1,SW_SWITCHED_ON))
                     {
                         ycoe_setcontrolword(1,CW_ENABLEOP);
-                        final_position = 181920;
-                        if (pos_cmd_sem == 0) pos_cmd_sem++;
-                        //ycoe_ipm_set_position (1,8192);
+                        ycoe_set_slave_position (1,0xFFFFFF);
                     }
                     else {
                       if (ycoe_checkstatus(1,SW_OP_ENABLED))
                       {
-                        if (pos_cmd_sem > 0) {
-                          ycoe_ipm_set_position(1, final_position);
+
+                        if (ycoe_ppm_checkcontrol(1, CW_PPM_SNPI2) && \
+                            ycoe_ppm_checkstatus(1,SW_SETPOINT_ACK)) {
                           pos_cmd_sem--;
-                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_IPM_ENABLE);
+                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI1);
                         }
-/*                        if (ycoe_ipm_checkcontrol(1, CW_IPM_DISABLE) || \
-                            (ycoe_ipm_checkstatus(1,SW_IPM_ACTIVE)==0)) {
-                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_IPM_ENABLE);
-                        }
-                        if (pos_cmd_sem > 0) {
-                          /* Add interpolation calculations */
-/*                          printf("cycle %d: pos_cmd_sem>0\n\r",i);
-                          if (ycoe_ipm_goto_position(1,final_position)) {
-                            pos_cmd_sem--;
-                          }
-                        }
-*/                    }
+                        else if ((pos_cmd_sem>0) && ycoe_ppm_checkcontrol(1, CW_PPM_SNPI1))
+                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI2);
+                        else if (pos_cmd_sem>0)// Only in PP mode, this means CW = 0x0F
+                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_PPM_SNPI1);
+                      }
 
                     }
 
@@ -170,27 +154,22 @@ void coeController(char *ifname)
 
                     if(wkc >= expectedWKC)
                     {
-                      int usedbytes = 0;
-                      memcpy(guiIOmap, &ec_slavecount, 4);
-                      usedbytes = 4;
-                      for (int islaveindex = 1; islaveindex < ec_slavecount; islaveindex++) {
-                          memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Ibytes), 4);
-                          usedbytes += 4;
-                          memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Obytes), 4);
-                          usedbytes += 4;
-                          memcpy(guiIOmap+usedbytes,ec_slave[islaveindex].inputs, ec_slave[islaveindex].Ibytes);
-                          usedbytes += ec_slave[islaveindex].Ibytes;
-                          memcpy(guiIOmap+usedbytes,ec_slave[islaveindex].outputs, ec_slave[islaveindex].Obytes);
-                          usedbytes += ec_slave[islaveindex].Obytes;
-                      }
-                      guiIObytes = usedbytes;
-/*                    guiIOmap[0] = iloop;
+#ifdef _WIN32
+           						WaitForSingleObject(IOmutex, INFINITE);
+#else
+                      pthread_mutex_lock(&IOmutex);
+#endif
+                      guiIOmap[0] = iloop;
           						guiIOmap[1] = oloop;
 					          	for (j = 2; j < 2+iloop; j++)
           							guiIOmap[j] = ec_slave[0].inputs[j-2];
 					          	for (j = 2+iloop; j < 2+iloop+oloop; j++)
           							guiIOmap[j] = ec_slave[0].outputs[j-2-iloop];
-*/
+#ifdef _WIN32
+					          	ReleaseMutex(IOmutex);
+#else
+                      pthread_mutex_unlock(&IOmutex);
+#endif
 /*
           					  printf("PDO cycle %4d, WKC %d , T:%"PRId64"\n", i, wkc, ec_DCtime);
 
@@ -203,12 +182,7 @@ void coeController(char *ifname)
                         printf(" %2.2x", *(ec_slave[0].inputs + j));
                       printf("\n");
 */                   }
-#ifdef _WIN32
-					          	ReleaseMutex(IOmutex);
-#else
-                      pthread_mutex_unlock(&IOmutex);
-#endif
-                   osal_usleep(1000);
+                    osal_usleep(1000);
 
                 }
                 inOP = FALSE;
@@ -327,33 +301,29 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 
 	while (1) {
     zmq_recv(responder, buffer, 15, 0);
-
 #ifdef _WIN32
     WaitForSingleObject(IOmutex, INFINITE);
 #else
     pthread_mutex_lock(&IOmutex);
 #endif
     if (buffer[0] == 3) {
-      USINT *slaveaddr = (USINT *)(buffer + 1);
-      DINT *x = (DINT *)(buffer + 1+1);
-      //ycoe_ipm_set_position(*slaveaddr, *x);//Vulnerable to racing conditions
-      final_position = *x;
+      DINT *x = (DINT *)(buffer + 1);
+      ycoe_set_slave_position(1, *x);//Vulnerable to racing conditions
       pos_cmd_sem++;
-      printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,final_position,pos_cmd_sem);
     }
     else if (buffer[0] == 6) {
-      USINT *slaveaddr = (USINT *)(buffer + 1);
-      INT *regaddr = (INT *)(buffer + 1+1);
+      INT *slaveaddr = (INT *)(buffer + 1);
+      INT *regaddr = (INT *)(buffer + 1+4);
       printf("Slave %x Register %x Content = %x\n\r",*slaveaddr,*regaddr,ycoe_readreg_dint(*slaveaddr, *regaddr));
     }
     else if (buffer[0] == 9) {
-      USINT *slaveaddr = (USINT *)(buffer + 1);
-      INT *index = (INT *)(buffer + 1+1);
-      INT *subindex = (INT *)(buffer + 1+1+4);
+      INT *slaveaddr = (INT *)(buffer + 1);
+      INT *index = (INT *)(buffer + 1+4);
+      INT *subindex = (INT *)(buffer + 1+4+4);
       printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",*slaveaddr,*index,*subindex,ycoe_readCOparam(*slaveaddr, *index, *subindex));
     }
 
-    zmq_send(responder, guiIOmap, guiIObytes, 0);
+    zmq_send(responder, guiIOmap, 2+iloop+oloop, 0);
 #ifdef _WIN32
     ReleaseMutex(IOmutex);
 #else
@@ -387,11 +357,9 @@ int main(int argc, char *argv[])
     //      pthread_create( &thread1, NULL, (void *) &ecatcheck, (void*) &ctime);
     osal_thread_create(&thread1, 128000, &ecatcheck, (void*) &ctime);
     // thread to handle gui application requests
-    //osal_thread_create(&thread2, 128000, &controlserver, (void*)&ctime);
+    osal_thread_create(&thread2, 128000, &controlserver, (void*)&ctime);
     /* start cyclic part */
-    osal_thread_create(&thread2, 128000, &coeController, argv[1]);
-    //coeController(argv[1]);
-    controlserver(argv[1]);
+    coeController(argv[1]);
   }
   else
   {
