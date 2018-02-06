@@ -120,17 +120,17 @@ int ycoe_ipm_goto_position (int slavenum, DINT target_position) {
     if ((target_position - *current_position_pdo) > velocity) {
         *target_position_pdo = *current_position_pdo + velocity;
         ec_SDOwrite(slavenum,0x60C1,1,0,DINT_SIZE,target_position_pdo,EC_TIMEOUTRXM);
-        printf("Goto target request: %d\n\r", *target_position_pdo);
+        //printf("Goto target request: %d\n\r", *target_position_pdo);
         return 0;
     } else if ((target_position - *current_position_pdo) < -velocity) {
         *target_position_pdo = *current_position_pdo - velocity;
         ec_SDOwrite(slavenum,0x60C1,1,0,DINT_SIZE,target_position_pdo,EC_TIMEOUTRXM);
-        printf("Goto target request: %d\n\r", *target_position_pdo);
+        //printf("Goto target request: %d\n\r", *target_position_pdo);
         return 0;
     } else {
         *target_position_pdo = target_position;
         ec_SDOwrite(slavenum,0x60C1,1,0,DINT_SIZE,target_position_pdo,EC_TIMEOUTRXM);
-        printf("Goto target request: %d\n\r", *target_position_pdo);
+        //printf("Goto target request: %d\n\r", *target_position_pdo);
         return 1;
     }
 }

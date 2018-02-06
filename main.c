@@ -30,7 +30,7 @@ pthread_mutex_t IOmutex;
 
 char guiIOmap[4096];
 int guiIObytes = 0;
-int pos_cmd_sem = 0; // Position Command Semaphore
+int pos_cmd_sem[3] = {0,0,0}; // Position Command Semaphore
 DINT final_position = 0;
 //char  oloop, iloop;
 char IOmap[4096];
@@ -43,6 +43,7 @@ void coeController(char *ifname)
 {
     int i, j, chk;
     inOP = FALSE;
+    int islaveindex;
 
     printf("Starting YaskawaCoE master\n");
 
@@ -62,14 +63,16 @@ void coeController(char *ifname)
 
             /* Configure Distributed Clock mechanism */
             ec_configdc();
-            /* Check & Set Profile Position Mode Parameters */
-            ycoe_ipm_get_parameters(1);
-            ycoe_ipm_setup(1);
-            ycoe_ipm_get_parameters(1);
-            printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
-            ycoe_set_mode_of_operation(1,INTERPOLATED_POSITION_MODE);
-            printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
-            ycoe_ipm_set_parameters(1,1000,1000);
+            for (islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
+                /* Check & Set Interpolation Mode Parameters */
+                ycoe_ipm_get_parameters(islaveindex);
+                ycoe_ipm_setup(islaveindex);
+                printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
+                ycoe_set_mode_of_operation(islaveindex,INTERPOLATED_POSITION_MODE);
+                printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
+                ycoe_ipm_set_parameters(islaveindex,1048576,1048576);
+                ycoe_ipm_get_parameters(islaveindex);
+            }
 
 
 
@@ -84,11 +87,7 @@ void coeController(char *ifname)
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
             /* slave0 is the master. All slaves pdos are mapped to slave0 */
             //oloop = ec_slave[0].Obytes; /* Obytes are the total number of output bytes consolidated from all slaves */
-            //if ((oloop == 0) && (ec_slave[0].Obits > 0)) oloop = 1;
-            //if (oloop > 8) oloop = 8;
             //iloop = ec_slave[0].Ibytes; /* Ibytes are the total number of input bytes consolidated from all slaves */
-            //if ((iloop == 0) && (ec_slave[0].Ibits > 0)) iloop = 1;
-            //if (iloop > 8) iloop = 8;
 
             printf("segments : %d : %d %d %d %d\n",ec_group[0].nsegments ,ec_group[0].IOsegment[0],ec_group[0].IOsegment[1],ec_group[0].IOsegment[2],ec_group[0].IOsegment[3]);
 
@@ -129,40 +128,44 @@ void coeController(char *ifname)
                       pthread_mutex_lock(&IOmutex);
 #endif
  				          	i++;
-                    //ycoe_printstatus(1);
 
-                    if(ycoe_checkstatus(1,SW_SWITCHON_DISABLED))
-                      ycoe_setcontrolword(1,CW_SHUTDOWN);
-                    else if(ycoe_checkstatus(1,SW_RTSO))
-                      ycoe_setcontrolword(1,CW_SWITCHON);
-                    else if(ycoe_checkstatus(1,SW_SWITCHED_ON))
-                    {
-                        ycoe_setcontrolword(1,CW_ENABLEOP);
-                        final_position = 181920;
-                        if (pos_cmd_sem == 0) pos_cmd_sem++;
-                        //ycoe_ipm_set_position (1,8192);
-                    }
-                    else {
-                      if (ycoe_checkstatus(1,SW_OP_ENABLED))
-                      {
-                        if (pos_cmd_sem > 0) {
-                          ycoe_ipm_set_position(1, final_position);
-                          pos_cmd_sem--;
-                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_IPM_ENABLE);
+                    for (islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
+                        //ycoe_printstatus(1);
+
+                        if(ycoe_checkstatus(islaveindex,SW_SWITCHON_DISABLED))
+                          ycoe_setcontrolword(islaveindex,CW_SHUTDOWN);
+                        else if(ycoe_checkstatus(islaveindex,SW_RTSO))
+                          ycoe_setcontrolword(islaveindex,CW_SWITCHON);
+                        else if(ycoe_checkstatus(islaveindex,SW_SWITCHED_ON))
+                        {
+                            ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
+                            final_position = 181920;
+                            pos_cmd_sem[islaveindex] = 1;
+                            //ycoe_ipm_set_position (1,8192);
                         }
-/*                        if (ycoe_ipm_checkcontrol(1, CW_IPM_DISABLE) || \
-                            (ycoe_ipm_checkstatus(1,SW_IPM_ACTIVE)==0)) {
-                          ycoe_setcontrolword(1,CW_ENABLEOP | CW_IPM_ENABLE);
-                        }
-                        if (pos_cmd_sem > 0) {
-                          /* Add interpolation calculations */
-/*                          printf("cycle %d: pos_cmd_sem>0\n\r",i);
-                          if (ycoe_ipm_goto_position(1,final_position)) {
-                            pos_cmd_sem--;
+                        else {
+                          if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
+                          {
+/*                            if (pos_cmd_sem[islaveindex] > 0) {
+                              ycoe_ipm_set_position(islaveindex, final_position);
+                              pos_cmd_sem[islaveindex]--;
+                              ycoe_setcontrolword(islaveindex,CW_ENABLEOP | CW_IPM_ENABLE);
+                            }
+*/                          if (ycoe_ipm_checkcontrol(islaveindex, CW_IPM_DISABLE) || \
+                              (ycoe_ipm_checkstatus(islaveindex,SW_IPM_ACTIVE)==0)) {
+                              ycoe_setcontrolword(islaveindex,CW_ENABLEOP | CW_IPM_ENABLE);
+                            }
+                            if (pos_cmd_sem[islaveindex] > 0) {
+                              /* Add interpolation calculations */
+                              //printf("cycle %d: pos_cmd_sem[islaveindex]>0\n\r",i);
+//          					          printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
+                              if (ycoe_ipm_goto_position(islaveindex,final_position)) {
+                                pos_cmd_sem[islaveindex]--;
+                              }
+          					         // printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
+                            }
                           }
                         }
-*/                    }
-
                     }
 
                     ec_send_processdata();
@@ -173,7 +176,7 @@ void coeController(char *ifname)
                       int usedbytes = 0;
                       memcpy(guiIOmap, &ec_slavecount, 4);
                       usedbytes = 4;
-                      for (int islaveindex = 1; islaveindex < ec_slavecount; islaveindex++) {
+                      for (islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
                           memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Ibytes), 4);
                           usedbytes += 4;
                           memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Obytes), 4);
@@ -184,13 +187,6 @@ void coeController(char *ifname)
                           usedbytes += ec_slave[islaveindex].Obytes;
                       }
                       guiIObytes = usedbytes;
-/*                    guiIOmap[0] = iloop;
-          						guiIOmap[1] = oloop;
-					          	for (j = 2; j < 2+iloop; j++)
-          							guiIOmap[j] = ec_slave[0].inputs[j-2];
-					          	for (j = 2+iloop; j < 2+iloop+oloop; j++)
-          							guiIOmap[j] = ec_slave[0].outputs[j-2-iloop];
-*/
 /*
           					  printf("PDO cycle %4d, WKC %d , T:%"PRId64"\n", i, wkc, ec_DCtime);
 
@@ -208,7 +204,7 @@ void coeController(char *ifname)
 #else
                       pthread_mutex_unlock(&IOmutex);
 #endif
-                   osal_usleep(1000);
+                   osal_usleep(500);
 
                 }
                 inOP = FALSE;
@@ -335,11 +331,15 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 #endif
     if (buffer[0] == 3) {
       USINT *slaveaddr = (USINT *)(buffer + 1);
-      DINT *x = (DINT *)(buffer + 1+1);
-      //ycoe_ipm_set_position(*slaveaddr, *x);//Vulnerable to racing conditions
-      final_position = *x;
-      pos_cmd_sem++;
-      printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,final_position,pos_cmd_sem);
+      DINT *targetposition = (DINT *)(buffer + 1+1);
+      if (*slaveaddr <= ec_slavecount) {
+        //ycoe_ipm_set_position(*slaveaddr, *targetposition);//Vulnerable to racing conditions
+        final_position = *targetposition;
+        pos_cmd_sem[*slaveaddr]++;
+        printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
+      } else {
+        printf("Invalid slave address:%x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
+      }
     }
     else if (buffer[0] == 6) {
       USINT *slaveaddr = (USINT *)(buffer + 1);
