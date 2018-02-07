@@ -51,6 +51,7 @@ void coeController(char *ifname)
     if (ec_init(ifname))
     {
         printf("ec_init on %s succeeded.\n",ifname);
+printf("a(ec_init) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
 
         /*
            ec_config_init find and auto-config slaves.
@@ -59,21 +60,23 @@ void coeController(char *ifname)
         */
         if ( ec_config_init(FALSE) > 0 )
         {
+printf("a(ec_config_init) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
             printf("%d slaves found and configured. PRE_OP requested on all slaves.\n",ec_slavecount);
 
             /* Configure Distributed Clock mechanism */
             ec_configdc();
             for (islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
                 /* Check & Set Interpolation Mode Parameters */
-                ycoe_ipm_get_parameters(islaveindex);
+                //ycoe_ipm_get_parameters(islaveindex);
                 ycoe_ipm_setup(islaveindex);
-                printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
+                printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",islaveindex,0x1601,2,ycoe_readCOparam(islaveindex, 0x1601, 2));
                 ycoe_set_mode_of_operation(islaveindex,INTERPOLATED_POSITION_MODE);
-                printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",1,0x1601,2,ycoe_readCOparam(1, 0x1601, 2));
+                printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",islaveindex,0x1601,2,ycoe_readCOparam(islaveindex, 0x1601, 2));
                 ycoe_ipm_set_parameters(islaveindex,1048576,1048576);
-                ycoe_ipm_get_parameters(islaveindex);
+                //ycoe_ipm_get_parameters(islaveindex);
             }
 
+printf("a(ycoe_setup) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
 
 
             /*
@@ -82,6 +85,7 @@ void coeController(char *ifname)
                Outputs are placed together in the beginning of IOmap, inputs follow
             */
             ec_config_map(&IOmap);
+printf("a(ec_config_map) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
             printf("Slaves mapped, state to SAFE_OP requested.\n");
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
@@ -100,8 +104,10 @@ void coeController(char *ifname)
             /* send one valid process data to make outputs in slaves happy*/
             ec_send_processdata();
             ec_receive_processdata(EC_TIMEOUTRET);
+printf("a(1ec_send_pdo) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
             /* request OP state for all slaves */
             ec_writestate(0);
+printf("a(ec_writestate) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
             chk = 40;
             /* wait for all slaves to reach OP state */
             do
@@ -110,7 +116,7 @@ void coeController(char *ifname)
                 ec_receive_processdata(EC_TIMEOUTRET);
                 ec_statecheck(0, EC_STATE_OPERATIONAL, 50000);
             } while (chk-- && (ec_slave[0].state != EC_STATE_OPERATIONAL));
-
+printf("a(wait_op) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
 
 
             if (ec_slave[0].state == EC_STATE_OPERATIONAL )

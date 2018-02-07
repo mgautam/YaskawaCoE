@@ -12,18 +12,41 @@
 
 int ycoe_ipm_setup(int slavenum) {
     USINT usintbuff;
-    int usintsize = USINT_SIZE;
+    UINT  uintbuff;
     UDINT udintbuff;
-    int udintsize = UDINT_SIZE;
+
+    printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
 
     /* Disable the assignment of Sync manager and PDO */
     usintbuff=0;
     ec_SDOwrite(slavenum,0x1C12,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
     ec_SDOwrite(slavenum,0x1C13,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
 
+    /* Control Word mapping entry for RxPDO */
+    udintbuff=0x60400010;
+    ec_SDOwrite(slavenum,0x1602,1,0,UDINT_SIZE,&udintbuff,EC_TIMEOUTRXM);
     /* Set Interpolation data for target position in RxPDO */
     udintbuff=0x60C10120;
-    ec_SDOwrite(slavenum,0x1601,2,0,UDINT_SIZE,&udintbuff,EC_TIMEOUTRXM);
+    ec_SDOwrite(slavenum,0x1602,2,0,UDINT_SIZE,&udintbuff,EC_TIMEOUTRXM);
+    /* Set Number of Mapping Entries */
+    usintbuff=2;
+    ec_SDOwrite(slavenum,0x1602,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
+
+    /* Status Word mapping entry for TxPDO */
+    udintbuff=0x60410010;
+    ec_SDOwrite(slavenum,0x1A02,1,0,UDINT_SIZE,&udintbuff,EC_TIMEOUTRXM);
+    /* Set current position in TxPDO */
+    udintbuff=0x60640020;
+    ec_SDOwrite(slavenum,0x1A02,2,0,UDINT_SIZE,&udintbuff,EC_TIMEOUTRXM);
+    /* Set Number of Mapping Entries */
+    usintbuff=2;
+    ec_SDOwrite(slavenum,0x1A02,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
+
+    /* Assignment of Sync manager and PDO */
+    uintbuff=0x1602;
+    ec_SDOwrite(slavenum,0x1C12,1,0,UINT_SIZE,&uintbuff,EC_TIMEOUTRXM);
+    uintbuff=0x1A02;
+    ec_SDOwrite(slavenum,0x1C13,1,0,UINT_SIZE,&uintbuff,EC_TIMEOUTRXM);
 
     /* Enable the assignment of Sync manager and PDO */
     usintbuff=1;
@@ -31,8 +54,8 @@ int ycoe_ipm_setup(int slavenum) {
     ec_SDOwrite(slavenum,0x1C13,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
 
     /* Enable DC Mode with Sync0 Generation */
-    //ycoe_writereg(slavenum, 0x980, UINT_SIZE, 0x0300);
-    ec_dcsync0(slavenum,1,4000000,0);//CycleTime=1ms, CycleShift=0
+    ec_dcsync0(slavenum,1,4000000,0);//CycleTime=4ms, CycleShift=0
+    printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
     return 0;
 }
 
