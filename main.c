@@ -67,13 +67,13 @@ printf("a(ec_config_init) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x13
             ec_configdc();
             for (islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
                 /* Check & Set Interpolation Mode Parameters */
-                //ycoe_ipm_get_parameters(islaveindex);
-                ycoe_ipm_setup(islaveindex);
+                ycoe_csp_get_parameters(islaveindex);
+                ycoe_csp_setup(islaveindex);
                 printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",islaveindex,0x1601,2,ycoe_readCOparam(islaveindex, 0x1601, 2));
-                ycoe_set_mode_of_operation(islaveindex,INTERPOLATED_POSITION_MODE);
+                ycoe_set_mode_of_operation(islaveindex,CYCLIC_SYNC_POSITION_MODE);
                 printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",islaveindex,0x1601,2,ycoe_readCOparam(islaveindex, 0x1601, 2));
-                ycoe_ipm_set_parameters(islaveindex,1048576,1048576);
-                //ycoe_ipm_get_parameters(islaveindex);
+                ycoe_csp_set_parameters(islaveindex,0,0,1048576,1048576);
+                ycoe_csp_get_parameters(islaveindex);
             }
 
 printf("a(ycoe_setup) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
@@ -147,25 +147,21 @@ printf("a(wait_op) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
                             final_position = 181920;
                             pos_cmd_sem[islaveindex] = 1;
-                            //ycoe_ipm_set_position (1,8192);
+                            //ycoe_csp_set_position (1,8192);
                         }
                         else {
                           if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
                           {
 /*                            if (pos_cmd_sem[islaveindex] > 0) {
-                              ycoe_ipm_set_position(islaveindex, final_position);
+                              ycoe_csp_set_position(islaveindex, final_position);
                               pos_cmd_sem[islaveindex]--;
-                              ycoe_setcontrolword(islaveindex,CW_ENABLEOP | CW_IPM_ENABLE);
                             }
-*/                          if (ycoe_ipm_checkcontrol(islaveindex, CW_IPM_DISABLE) || \
-                              (ycoe_ipm_checkstatus(islaveindex,SW_IPM_ACTIVE)==0)) {
-                              ycoe_setcontrolword(islaveindex,CW_ENABLEOP | CW_IPM_ENABLE);
-                            }
+*/
                             if (pos_cmd_sem[islaveindex] > 0) {
                               /* Add interpolation calculations */
                               //printf("cycle %d: pos_cmd_sem[islaveindex]>0\n\r",i);
 //          					          printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
-                              if (ycoe_ipm_goto_position(islaveindex,final_position)) {
+                              if (ycoe_csp_goto_position(islaveindex,final_position)) {
                                 pos_cmd_sem[islaveindex]--;
                               }
           					         // printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);

@@ -6,5 +6,6 @@
 #include "ycoe_controlstatus.h"
 #include "ycoe_profile_position.h"
 #include "ycoe_interpolation.h"
+#include "ycoe_cyclicposition.h"
 
 #endif
