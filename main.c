@@ -335,7 +335,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       USINT *slaveaddr = (USINT *)(buffer + 1);
       DINT *targetposition = (DINT *)(buffer + 1+1);
       if (*slaveaddr <= ec_slavecount) {
-        //ycoe_ipm_set_position(*slaveaddr, *targetposition);//Vulnerable to racing conditions
+        //ycoe_csp_set_position(*slaveaddr, *targetposition);//Vulnerable to racing conditions
         final_position = *targetposition;
         pos_cmd_sem[*slaveaddr]++;
         printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
@@ -353,6 +353,16 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       INT *index = (INT *)(buffer + 1+1);
       INT *subindex = (INT *)(buffer + 1+1+4);
       printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",*slaveaddr,*index,*subindex,ycoe_readCOparam(*slaveaddr, *index, *subindex));
+    }
+    else if (buffer[0] == 33) {
+      // Multi axis Command
+      USINT slaveaddr;
+      DINT *targetposition = (DINT *)(buffer + 1);
+      final_position = *targetposition;
+      for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
+        pos_cmd_sem[slaveaddr]++;
+        printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
+      }
     }
 
     zmq_send(responder, guiIOmap, guiIObytes, 0);

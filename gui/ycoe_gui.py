@@ -71,6 +71,18 @@ class ReadCOBtn(Button):
         ctrlwindow.socket.send(struct.pack('<BBII',9,islaveaddr,iindex,isubindex))
         message = ctrlwindow.socket.recv()
 
+class MultiPosBtn(Button):
+    def move_cmdpos(self, strposition):
+        ctrlwindow=self.parent.parent.parent
+        distance=int(strposition)
+        if distance>4294967295:
+            distance=4294967295
+        elif distance<0:
+            distance=0
+        ctrlwindow.socket.send(struct.pack('<BI',33,distance))
+        message = ctrlwindow.socket.recv()
+
+
 class AbsGoBtn(Button):
     def move_absolute(self, distance):
         ctrlwindow=self.get_parent_window
