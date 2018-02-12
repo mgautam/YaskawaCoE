@@ -44,6 +44,8 @@ void coeController(char *ifname)
     int i, j, chk;
     inOP = FALSE;
     int islaveindex;
+    ec_timet current_time, previous_time, diff_time;
+    unsigned int act_cycle_time, min_cycle_time = 999999, max_cycle_time = 0;
 
     printf("Starting YaskawaCoE master\n");
 
@@ -124,6 +126,8 @@ printf("a(wait_op) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
                 printf("Operational state reached for all slaves.\n");
                 inOP = TRUE;
 
+                previous_time = osal_current_time();
+
                 /* cyclic loop */
 				        i = 0;
         				while(1)
@@ -158,7 +162,7 @@ printf("a(wait_op) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
                             }
 */
                             if (pos_cmd_sem[islaveindex] > 0) {
-                              /* Add interpolation calculations */
+                              // Add interpolation calculations
                               //printf("cycle %d: pos_cmd_sem[islaveindex]>0\n\r",i);
 //          					          printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
                               if (ycoe_csp_goto_position(islaveindex,final_position)) {
@@ -166,6 +170,7 @@ printf("a(wait_op) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
                               }
           					         // printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
                             }
+
                           }
                         }
                     }
@@ -208,6 +213,14 @@ printf("a(wait_op) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
 #endif
                    osal_usleep(500);
 
+
+                   current_time = osal_current_time();
+                   osal_time_diff(&previous_time,&current_time,&diff_time);
+                   act_cycle_time = diff_time.usec;
+                   if (act_cycle_time < min_cycle_time) min_cycle_time = act_cycle_time;
+                   if (act_cycle_time > max_cycle_time) max_cycle_time = act_cycle_time;
+                   printf("cycle:%d act:%6d min:%6d max:%6d\r",i,act_cycle_time,min_cycle_time,max_cycle_time);
+                   previous_time = current_time;
                 }
                 inOP = FALSE;
             }
@@ -401,7 +414,7 @@ int main(int argc, char *argv[])
     // thread to handle gui application requests
     //osal_thread_create(&thread2, 128000, &controlserver, (void*)&ctime);
     /* start cyclic part */
-    osal_thread_create(&thread2, 128000, &coeController, argv[1]);
+    osal_thread_create_rt(&thread2, 128000, &coeController, argv[1]);
     //coeController(argv[1]);
     controlserver(argv[1]);
   }

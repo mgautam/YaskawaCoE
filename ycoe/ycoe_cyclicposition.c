@@ -100,8 +100,8 @@ int ycoe_csp_goto_position (int slavenum, DINT target_position) {
     DINT *current_position_pdo = (DINT *)(ec_slave[slavenum].inputs+2);
     DINT *target_position_pdo = (DINT *)(ec_slave[slavenum].outputs+2);
 
-    DINT velocity = 20000; /* 2000 counts per 4ms */
-    if (ycoe_csp_checkstatus(slavenum, SW_CSP_TARGET_REACHED)) {
+    DINT velocity = 1600000; /* 1600000 counts per 4ms */
+    //if (ycoe_csp_checkstatus(slavenum, SW_CSP_TARGET_REACHED)) {
       if ((target_position - *current_position_pdo) > velocity) {
         *target_position_pdo = *current_position_pdo + velocity;
         //printf("Goto target request: %d\n\r", *target_position_pdo);
@@ -115,5 +115,5 @@ int ycoe_csp_goto_position (int slavenum, DINT target_position) {
         //printf("Goto target request: %d\n\r", *target_position_pdo);
         return 1;
       }
-    }
+    //}
 }
