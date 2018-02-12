@@ -14,6 +14,11 @@ set (YaskawaCoE_VERSION_MINOR 0)
 
 if(WIN32)
   set(OS "win32")
+  include_directories(SOEM/oshw/win32/wpcap/Include)
+  link_directories(${CMAKE_SOURCE_DIR}/SOEM/oshw/win32/wpcap/Lib)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /D _CRT_SECURE_NO_WARNINGS")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  /WX")
+  set(OS_LIBS wpcap.lib Packet.lib Ws2_32.lib Winmm.lib)
 elseif(UNIX)
   set(OS "linux")
 endif()
@@ -23,10 +28,12 @@ include_directories(SOEM/soem)
 include_directories(SOEM/osal)
 include_directories(SOEM/osal/${OS})
 include_directories(SOEM/oshw/${OS})
+include_directories(libzmq/include)
 include_directories(ycoe)
 
-# build the SOEM driver
+# build the SOEM driver and zeromq driver
 add_subdirectory(SOEM)
+add_subdirectory(libzmq)
 
 # build the executable
 #include_directories(SOEM)
@@ -36,8 +43,9 @@ add_executable(yaskawaCoE
   ${YCOE_SOURCES}
   main.c)
 
-# link the object file with the soem library
+# link the object file with the soem and libzmq library
 target_link_libraries(yaskawaCoE soem)
+target_link_libraries(yaskawaCoE libzmq)
 
 # set install path
 install(TARGETS yaskawaCoE DESTINATION bin)

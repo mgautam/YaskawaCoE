@@ -9,8 +9,10 @@ typedef uint8 USINT;
 #define SINT_SIZE sizeof(uint8)
 #define USINT_SIZE SINT_SIZE
 
+#ifdef linux
 typedef int16 INT;
 typedef uint16 UINT;
+#endif
 #define INT_SIZE sizeof(uint16)
 #define UINT_SIZE INT_SIZE
 
@@ -31,6 +33,6 @@ enum {
   CYCLIC_SYNC_TORQUE_MODE     = 10
 } ycoe_operation_modes;
 
-int ycoe_set_mode_of_operation (SINT mode_of_operation);
+int ycoe_set_mode_of_operation (int slavenum, SINT mode_of_operation);
 
 #endif

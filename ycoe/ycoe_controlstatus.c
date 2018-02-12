@@ -1,12 +1,23 @@
+/** \file
+ * \brief YaskawaCoE Control and Status Access
+ *
+ * (c)Gautam Manoharan 2017 - 2018
+ */
+
 #include <stdio.h>
 #include "ycoetype.h"
 #include "ycoe_controlstatus.h"
 #include "ethercat.h"
 
+#ifdef _WIN32
+int ycoe_setcontrolword(int slavenum, uint16 controlvalue) {
+    uint16 *controlword = (uint16 *) ec_slave[slavenum].outputs;
+#else
 int ycoe_setcontrolword(int slavenum, UINT controlvalue) {
     UINT *controlword = (UINT *) ec_slave[slavenum].outputs;
+#endif
     *controlword = controlvalue;
-
+/*
     printf("Controlword: %x -> ",controlvalue);
     if ((controlvalue & CW_MASK_03) == CW_ENABLEOP)
         printf("EnOp");
@@ -16,12 +27,17 @@ int ycoe_setcontrolword(int slavenum, UINT controlvalue) {
         printf("ShDn");
 
     printf("\n");
-
+*/
     return 0;
 }
 
+#ifdef _WIN32
+int ycoe_checkstatus (int slavenum, uint16 targetstatus) {
+  uint16 *statusword = (uint16 *)ec_slave[slavenum].inputs;
+#else
 int ycoe_checkstatus (int slavenum, UINT targetstatus) {
   UINT *statusword = (UINT *)ec_slave[slavenum].inputs;
+#endif
   int retval = 0;
 
   if ((targetstatus & SW_MASK_NRTSO) == SW_NRTSO) {

@@ -6,6 +6,7 @@ Dependencies
 
  * CMake 2.8.0 or later
  * Xilinx SDK 2017.3
+ * Python 3.5.1 or later
 
 Build Status
 ------------

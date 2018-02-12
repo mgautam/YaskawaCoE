@@ -1,0 +1,186 @@
+<StsLabel@Button>:
+    #size_hint:None,None
+    #size:root.width/5,root.height/15
+    text_size:self.size
+    halign:'center'
+    valign:'middle'
+
+<controlWindow@FloatLayout>:
+    cmdlbl:cmd_lbl
+    statuslbl:status_lbl
+
+    tarpos1:_tarpos1
+    curpos1:_curpos1
+    statusword1:_status1
+    controlword1:_control1
+
+    tarpos2:_tarpos2
+    curpos2:_curpos2
+    statusword2:_status2
+    controlword2:_control2
+
+
+    RelativeLayout:
+        size_hint:None,None
+        size:root.width,root.height-30
+        pos:0,30
+        Label:
+            size_hint:None,None
+            size:160,30
+            pos:100,510
+            text: "Slave 1"
+        GridLayout:
+            cols:2
+            rows:4
+            size_hint:None,None
+            size:300,200
+            pos:30,300
+            StsLabel:
+                text:"Target Position"
+            StsLabel:
+                id:_tarpos1
+            StsLabel:
+                text:"Current Position"
+            StsLabel:
+                id:_curpos1
+            StsLabel:
+                text:"StatusWord"
+            StsLabel:
+                id:_status1
+            StsLabel:
+                text:"ControlWord"
+            StsLabel:
+                id:_control1
+        GridLayout:
+            rows:5
+            size_hint:None,None
+            size:300,250
+            pos:30,10
+            AbsMoveBtn:
+                text:'Goto 0xFFFFFF'
+                on_press:self.move_absolute(b'\x03\x01\xFF\xFF\xFF\x00')
+            AbsMoveBtn:
+                text:'Home ZeroPos'
+                on_press:self.move_absolute(b'\x03\x01\x00\x00\x00\x00')
+            CmdPosBtn:
+                cmdpos1:_cmdpos1
+                text:'Goto'
+                on_press:self.move_cmdpos(1,self.cmdpos1.text)
+            TextInput:
+                id:_cmdpos1
+            MultiPosBtn:
+                cmdpos:_cmdpos1
+                text:'Multi-Axis Goto'
+                on_press:self.move_cmdpos(self.cmdpos.text)
+        Label:
+            size_hint:None,None
+            size:160,30
+            pos:430,510
+            text: "Slave 2"
+        GridLayout:
+            cols:2
+            rows:4
+            size_hint:None,None
+            size:300,200
+            pos:360,300
+            StsLabel:
+                text:"Target Position"
+            StsLabel:
+                id:_tarpos2
+            StsLabel:
+                text:"Current Position"
+            StsLabel:
+                id:_curpos2
+            StsLabel:
+                text:"StatusWord"
+            StsLabel:
+                id:_status2
+            StsLabel:
+                text:"ControlWord"
+            StsLabel:
+                id:_control2
+        GridLayout:
+            rows:4
+            size_hint:None,None
+            size:300,200
+            pos:360,60
+            AbsMoveBtn:
+                text:'Goto 0xFFFFFF'
+                on_press:self.move_absolute(b'\x03\x02\xFF\xFF\xFF\x00')
+            AbsMoveBtn:
+                text:'Home ZeroPos'
+                on_press:self.move_absolute(b'\x03\x02\x00\x00\x00\x00')
+            CmdPosBtn:
+                cmdpos2:_cmdpos2
+                text:'Goto'
+                on_press:self.move_cmdpos(2,self.cmdpos2.text)
+            TextInput:
+                id:_cmdpos2
+
+
+
+        GridLayout:
+            cols:2
+            rows:3
+            size_hint:None,None
+            size:root.width/3,root.height/5
+            pos:690,300
+            Label:
+                text:"Slave Address"
+            TextInput:
+                id:_slaveaddr
+            Label:
+                text:"Register Address"
+            TextInput:
+                id:_regaddr
+            Label:
+                text:""
+            RegReadBtn:
+                id:_regReadBtn
+                slaveaddr: _slaveaddr
+                regaddr:_regaddr
+                text:'Read Register'
+                on_press:self.readreg(self.slaveaddr.text, self.regaddr.text)
+        GridLayout:
+            cols:2
+            rows:4
+            size_hint:None,None
+            size:root.width/3,root.height/5
+            pos:690,60
+            Label:
+                text:"Slave Address"
+            TextInput:
+                id:_coslaveaddr
+            Label:
+                text:"Index"
+            TextInput:
+                id:_coindex
+            Label:
+                text:"SubIndex"
+            TextInput:
+                id:_cosubindex
+            Label:
+                text:""
+            ReadCOBtn:
+                id:_ReadCOBtn
+                coslaveaddr: _coslaveaddr
+                coindex:_coindex
+                cosubindex:_cosubindex
+                text:'Read CO Parameter'
+                on_press:self.readcoparam(self.coslaveaddr.text, self.coindex.text, self.cosubindex.text)
+    Label:
+        id: cmd_lbl
+        size_hint:None,None
+        size:root.width,15
+        pos:0,15
+        halign: 'left'
+        text_size: self.size
+        text:"Last Command: " + str(root.width) + "," + str(root.height)
+    Label:
+        id: status_lbl
+        size_hint:None,None
+        size:root.width,15
+        pos:0,0
+        halign: 'left'
+        text_size: self.size
+        text:"Status: "
