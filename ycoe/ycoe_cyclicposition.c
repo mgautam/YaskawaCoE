@@ -121,8 +121,8 @@ int ycoe_csp_goto_possync (int slavenum, DINT target_position) {
     DINT *current_position_pdo1 = (DINT *)(ec_slave[1].inputs+2);
     DINT *current_position_pdo2 = (DINT *)(ec_slave[2].inputs+2);
     DINT current_position_pdo;
-    if (*current_position_pdo1 > *current_position_pdo2) current_positiion_pdo = *current_position_pdo2;
-    else current_positiion_pdo = *current_position_pdo1;
+    if (*current_position_pdo1 > *current_position_pdo2) current_position_pdo = *current_position_pdo2;
+    else current_position_pdo = *current_position_pdo1;
 
     DINT *target_position_pdo = (DINT *)(ec_slave[slavenum].outputs+2);
 

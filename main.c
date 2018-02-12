@@ -136,7 +136,7 @@ void coeController(char *ifname)
                         else if(ycoe_checkstatus(islaveindex,SW_SWITCHED_ON))
                         {
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
-                            final_position = 1500000000;//81920;
+                            final_position = 1500000000;//181920;
                             pos_cmd_sem[islaveindex] = 1;
                             //ycoe_csp_set_position (1,8192);
                         }
