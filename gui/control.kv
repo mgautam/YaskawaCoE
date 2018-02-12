@@ -117,57 +117,6 @@
             TextInput:
                 id:_cmdpos2
 
-
-
-        GridLayout:
-            cols:2
-            rows:3
-            size_hint:None,None
-            size:root.width/3,root.height/5
-            pos:690,300
-            Label:
-                text:"Slave Address"
-            TextInput:
-                id:_slaveaddr
-            Label:
-                text:"Register Address"
-            TextInput:
-                id:_regaddr
-            Label:
-                text:""
-            RegReadBtn:
-                id:_regReadBtn
-                slaveaddr: _slaveaddr
-                regaddr:_regaddr
-                text:'Read Register'
-                on_press:self.readreg(self.slaveaddr.text, self.regaddr.text)
-        GridLayout:
-            cols:2
-            rows:4
-            size_hint:None,None
-            size:root.width/3,root.height/5
-            pos:690,60
-            Label:
-                text:"Slave Address"
-            TextInput:
-                id:_coslaveaddr
-            Label:
-                text:"Index"
-            TextInput:
-                id:_coindex
-            Label:
-                text:"SubIndex"
-            TextInput:
-                id:_cosubindex
-            Label:
-                text:""
-            ReadCOBtn:
-                id:_ReadCOBtn
-                coslaveaddr: _coslaveaddr
-                coindex:_coindex
-                cosubindex:_cosubindex
-                text:'Read CO Parameter'
-                on_press:self.readcoparam(self.coslaveaddr.text, self.coindex.text, self.cosubindex.text)
     Label:
         id: cmd_lbl
         size_hint:None,None

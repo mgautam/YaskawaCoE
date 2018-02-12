@@ -8,28 +8,11 @@ from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.clock import Clock
 
-class RelMoveBtn(Button):
-    def move_relative(self, distance):
-        ctrlwindow=self.parent.parent.parent
-        cmdmsg='{"type":"relative","distance":"%s"}' % ( distance)
-        ctrlwindow.socket.send(cmdmsg)
-        print(cmdmsg)
-
-class RelGoBtn(Button):
-    def move_relative(self, distance):
-        ctrlwindow=self.parent.parent.parent
-        cmdmsg='{"type":"relative","distance":"%s"}' % ( distance)
-        ctrlwindow.socket.send(cmdmsg)
-        print(cmdmsg)
-
 class AbsMoveBtn(Button):
     def move_absolute(self, distance):
         ctrlwindow=self.parent.parent.parent
-        #cmdmsg=json.dumps({"type":"absolute","distance":distance})
-        #print([distance])
         ctrlwindow.socket.send(distance)
         message = ctrlwindow.socket.recv()
-        #print("Received reply %s [ %s ]" % (cmdmsg, message))
 
 class CmdPosBtn(Button):
     def move_cmdpos(self, slavenum, strposition):
@@ -39,36 +22,7 @@ class CmdPosBtn(Button):
             distance=4294967295
         elif distance<0:
             distance=0
-        #cmdmsg=json.dumps({"type":"absolute","distance":distance})
-        #print([distance, distance.to_bytes(4, byteorder='little'), struct.pack(distance])
-        #print(struct.pack('<BI',3,distance))
         ctrlwindow.socket.send(struct.pack('<BBI',3,slavenum,distance))
-        message = ctrlwindow.socket.recv()
-        #print("Received reply %s [ %s ]" % (cmdmsg, message))
-
-class RegReadBtn(Button):
-    def readreg(self, slaveaddr, regaddr):
-        ctrlwindow=self.parent.parent.parent
-        islaveaddr=int(slaveaddr)
-        iregaddr=int(regaddr,16)
-        if islaveaddr > 0xFFFF:
-            islaveaddr = 0xFFFF
-        if iregaddr > 0xFFFF:
-            iregaddr = 0xFFFF
-        ctrlwindow.socket.send(struct.pack('<BBI',6,islaveaddr,iregaddr))
-        message = ctrlwindow.socket.recv()
-
-class ReadCOBtn(Button):
-    def readcoparam(self, slaveaddr, index, subindex):
-        ctrlwindow=self.parent.parent.parent
-        islaveaddr=int(slaveaddr)
-        iindex=int(index,16)
-        isubindex=int(subindex,16)
-        if islaveaddr > 0xFFFF:
-            islaveaddr = 0xFFFF
-        if iindex > 0xFFFF:
-            iindex = 0xFFFF
-        ctrlwindow.socket.send(struct.pack('<BBII',9,islaveaddr,iindex,isubindex))
         message = ctrlwindow.socket.recv()
 
 class MultiPosBtn(Button):
@@ -81,15 +35,6 @@ class MultiPosBtn(Button):
             distance=0
         ctrlwindow.socket.send(struct.pack('<BI',33,distance))
         message = ctrlwindow.socket.recv()
-
-
-class AbsGoBtn(Button):
-    def move_absolute(self, distance):
-        ctrlwindow=self.get_parent_window
-        cmdmsg=json.dumps({"type":"absolute","distance":distance})
-        ctrlwindow.socket.send(cmdmsg)
-        print(cmdmsg)
-
 
 class controlWindow(FloatLayout):
     context=None
@@ -121,7 +66,6 @@ class controlWindow(FloatLayout):
             self.statusword1.text=''.join('{:02x}'.format(x) for x in reversed(idata[0:2]))
             self.controlword1.text=''.join('{:02x}'.format(x) for x in reversed(odata[0:2]))
 
-            #frloc = framelocation
             frloc = 12+inputbytes+outputbytes
             inputbytes=int.from_bytes(data[frloc:frloc+4],byteorder='little')
             outputbytes=int.from_bytes(data[frloc+4:frloc+8],byteorder='little')
@@ -144,7 +88,7 @@ class ControlApp(App):
         return controlWindow()
 
 if __name__ == '__main__':
-    Config.set('graphics', 'width',  1080)
+    Config.set('graphics', 'width',  690)
     Config.set('graphics', 'height', 600)
-    Window.size = (1080,600)
+    Window.size = (690,600)
     ControlApp().run()

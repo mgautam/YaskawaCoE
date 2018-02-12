@@ -136,7 +136,7 @@ void coeController(char *ifname)
                         else if(ycoe_checkstatus(islaveindex,SW_SWITCHED_ON))
                         {
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
-                            final_position = 181920;
+                            final_position = 1500000000;//81920;
                             pos_cmd_sem[islaveindex] = 1;
                             //ycoe_csp_set_position (1,8192);
                         }
@@ -346,21 +346,8 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
         //ycoe_csp_set_position(*slaveaddr, *targetposition);//Vulnerable to racing conditions
         final_position = *targetposition;
         pos_cmd_sem[*slaveaddr]++;
-        printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
-      } else {
-        printf("Invalid slave address:%x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
+        //printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
       }
-    }
-    else if (buffer[0] == 6) {
-      USINT *slaveaddr = (USINT *)(buffer + 1);
-      INT *regaddr = (INT *)(buffer + 1+1);
-      printf("Slave %x Register %x Content = %x\n\r",*slaveaddr,*regaddr,ycoe_readreg_dint(*slaveaddr, *regaddr));
-    }
-    else if (buffer[0] == 9) {
-      USINT *slaveaddr = (USINT *)(buffer + 1);
-      INT *index = (INT *)(buffer + 1+1);
-      INT *subindex = (INT *)(buffer + 1+1+4);
-      printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",*slaveaddr,*index,*subindex,ycoe_readCOparam(*slaveaddr, *index, *subindex));
     }
     else if (buffer[0] == 33) {
       // Multi axis Command
@@ -369,7 +356,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       final_position = *targetposition;
       for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
         pos_cmd_sem[slaveaddr]++;
-        printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
+        //printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
       }
     }
 
