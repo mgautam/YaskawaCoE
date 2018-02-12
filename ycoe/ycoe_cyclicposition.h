@@ -25,4 +25,5 @@ int ycoe_csp_set_parameters (int slavenum, UDINT velocity_offset, UDINT torque_o
 int ycoe_csp_set_position (int slavenum, DINT target_position);
 int ycoe_csp_add_position (int slavenum, DINT position);
 int ycoe_csp_goto_position (int slavenum, DINT target_position);
+int ycoe_csp_goto_possync (int slavenum, DINT target_position);
 #endif

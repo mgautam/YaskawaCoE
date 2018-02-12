@@ -44,17 +44,17 @@ void coeController(char *ifname)
     int i, j, chk;
     inOP = FALSE;
     int islaveindex;
+
     ec_timet current_time, previous_time, diff_time;
     unsigned int act_cycle_time, min_cycle_time = 999999, max_cycle_time = 0, avg_cycle_time = 0, sum_cycle_time = 0;
+
     FILE *posfile = fopen("slave_positions.csv","w");
     fprintf(posfile, "Cycle, CycleTime, Slave1 Target Position, Actual Position, Slave2 Target Position,Actual Position,\n");
-    printf("Starting YaskawaCoE master\n");
 
     /* initialise SOEM, bind socket to ifname */
     if (ec_init(ifname))
     {
         printf("ec_init on %s succeeded.\n",ifname);
-printf("a(ec_init) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
 
         /*
            ec_config_init find and auto-config slaves.
@@ -63,23 +63,18 @@ printf("a(ec_init) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
         */
         if ( ec_config_init(FALSE) > 0 )
         {
-printf("a(ec_config_init) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
             printf("%d slaves found and configured. PRE_OP requested on all slaves.\n",ec_slavecount);
 
             /* Configure Distributed Clock mechanism */
             ec_configdc();
             for (islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
                 /* Check & Set Interpolation Mode Parameters */
-                ycoe_csp_get_parameters(islaveindex);
+                //ycoe_csp_get_parameters(islaveindex);
                 ycoe_csp_setup(islaveindex);
-                printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",islaveindex,0x1601,2,ycoe_readCOparam(islaveindex, 0x1601, 2));
                 ycoe_set_mode_of_operation(islaveindex,CYCLIC_SYNC_POSITION_MODE);
-                printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",islaveindex,0x1601,2,ycoe_readCOparam(islaveindex, 0x1601, 2));
                 ycoe_csp_set_parameters(islaveindex,0,0,1048576,1048576);
-                ycoe_csp_get_parameters(islaveindex);
+                //ycoe_csp_get_parameters(islaveindex);
             }
-
-printf("a(ycoe_setup) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
 
 
             /*
@@ -88,17 +83,12 @@ printf("a(ycoe_setup) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
                Outputs are placed together in the beginning of IOmap, inputs follow
             */
             ec_config_map(&IOmap);
-printf("a(ec_config_map) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
             printf("Slaves mapped, state to SAFE_OP requested.\n");
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
             /* slave0 is the master. All slaves pdos are mapped to slave0 */
             //oloop = ec_slave[0].Obytes; /* Obytes are the total number of output bytes consolidated from all slaves */
             //iloop = ec_slave[0].Ibytes; /* Ibytes are the total number of input bytes consolidated from all slaves */
-
-            printf("segments : %d : %d %d %d %d\n",ec_group[0].nsegments ,ec_group[0].IOsegment[0],ec_group[0].IOsegment[1],ec_group[0].IOsegment[2],ec_group[0].IOsegment[3]);
-
-
 
             printf("Request operational state for all slaves\n");
             expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
@@ -107,10 +97,8 @@ printf("a(ec_config_map) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130
             /* send one valid process data to make outputs in slaves happy*/
             ec_send_processdata();
             ec_receive_processdata(EC_TIMEOUTRET);
-printf("a(1ec_send_pdo) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
             /* request OP state for all slaves */
             ec_writestate(0);
-printf("a(ec_writestate) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
             chk = 40;
             /* wait for all slaves to reach OP state */
             do
@@ -119,8 +107,6 @@ printf("a(ec_writestate) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130
                 ec_receive_processdata(EC_TIMEOUTRET);
                 ec_statecheck(0, EC_STATE_OPERATIONAL, 50000);
             } while (chk-- && (ec_slave[0].state != EC_STATE_OPERATIONAL));
-printf("a(wait_op) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
-
 
             if (ec_slave[0].state == EC_STATE_OPERATIONAL )
             {
@@ -166,7 +152,11 @@ printf("a(wait_op) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
                               // Add interpolation calculations
                               //printf("cycle %d: pos_cmd_sem[islaveindex]>0\n\r",i);
 //          					          printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
-                              if (ycoe_csp_goto_position(islaveindex,final_position)) {
+/*                              if (ycoe_csp_goto_position(islaveindex,final_position)) {
+                                pos_cmd_sem[islaveindex]--;
+                              }
+*/
+                              if (ycoe_csp_goto_possync(islaveindex,final_position)) {
                                 pos_cmd_sem[islaveindex]--;
                               }
           					         // printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);

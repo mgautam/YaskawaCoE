@@ -117,3 +117,29 @@ int ycoe_csp_goto_position (int slavenum, DINT target_position) {
       }
     //}
 }
+int ycoe_csp_goto_possync (int slavenum, DINT target_position) {
+    DINT *current_position_pdo1 = (DINT *)(ec_slave[1].inputs+2);
+    DINT *current_position_pdo2 = (DINT *)(ec_slave[2].inputs+2);
+    DINT current_position_pdo;
+    if (*current_position_pdo1 > *current_position_pdo2) current_positiion_pdo = *current_position_pdo2;
+    else current_positiion_pdo = *current_position_pdo1;
+
+    DINT *target_position_pdo = (DINT *)(ec_slave[slavenum].outputs+2);
+
+    DINT velocity = 1600000; /* 1600000 counts per 2ms */
+    //if (ycoe_csp_checkstatus(slavenum, SW_CSP_TARGET_REACHED)) {
+      if ((target_position - current_position_pdo) > velocity) {
+        *target_position_pdo = current_position_pdo + velocity;
+        //printf("Goto target request: %d\n\r", *target_position_pdo);
+        return 0;
+      } else if ((target_position - current_position_pdo) < -velocity) {
+        *target_position_pdo = current_position_pdo - velocity;
+        //printf("Goto target request: %d\n\r", *target_position_pdo);
+        return 0;
+      } else {
+        *target_position_pdo = target_position;
+        //printf("Goto target request: %d\n\r", *target_position_pdo);
+        return 1;
+      }
+    //}
+}
