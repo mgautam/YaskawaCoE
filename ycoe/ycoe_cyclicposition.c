@@ -18,7 +18,7 @@ int ycoe_csp_setup(int slavenum) {
     printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
 
     /* Enable DC Mode with Sync0 Generation */
-    ec_dcsync0(slavenum,1,4000000,0);//CycleTime=4ms, CycleShift=0
+    ec_dcsync0(slavenum,1,2000000,0);//CycleTime=2ms, CycleShift=0
     printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
     return 0;
 }
@@ -100,7 +100,7 @@ int ycoe_csp_goto_position (int slavenum, DINT target_position) {
     DINT *current_position_pdo = (DINT *)(ec_slave[slavenum].inputs+2);
     DINT *target_position_pdo = (DINT *)(ec_slave[slavenum].outputs+2);
 
-    DINT velocity = 1600000; /* 1600000 counts per 4ms */
+    DINT velocity = 1600000; /* 1600000 counts per 2ms */
     //if (ycoe_csp_checkstatus(slavenum, SW_CSP_TARGET_REACHED)) {
       if ((target_position - *current_position_pdo) > velocity) {
         *target_position_pdo = *current_position_pdo + velocity;

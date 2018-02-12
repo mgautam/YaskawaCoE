@@ -45,8 +45,9 @@ void coeController(char *ifname)
     inOP = FALSE;
     int islaveindex;
     ec_timet current_time, previous_time, diff_time;
-    unsigned int act_cycle_time, min_cycle_time = 999999, max_cycle_time = 0;
-
+    unsigned int act_cycle_time, min_cycle_time = 999999, max_cycle_time = 0, avg_cycle_time = 0, sum_cycle_time = 0;
+    FILE *posfile = fopen("slave_positions.csv","w");
+    fprintf(posfile, "Cycle, CycleTime, Slave1 Target Position, Actual Position, Slave2 Target Position,Actual Position,\n");
     printf("Starting YaskawaCoE master\n");
 
     /* initialise SOEM, bind socket to ifname */
@@ -219,8 +220,12 @@ printf("a(wait_op) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
                    act_cycle_time = diff_time.usec;
                    if (act_cycle_time < min_cycle_time) min_cycle_time = act_cycle_time;
                    if (act_cycle_time > max_cycle_time) max_cycle_time = act_cycle_time;
-                   printf("cycle:%d act:%6d min:%6d max:%6d\r",i,act_cycle_time,min_cycle_time,max_cycle_time);
+                   sum_cycle_time += act_cycle_time;
+                   avg_cycle_time = (int) (((float)sum_cycle_time)/((float)i));
+                   printf("cycle:%d act:%6d min:%6d avg:%6d max:%6d\r",i,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);
                    previous_time = current_time;
+
+                   fprintf(posfile,"%d,%d,%d,%d,%d,%d,\n",i,act_cycle_time,*(UDINT *)(ec_slave[1].outputs+2),*(UDINT *)(ec_slave[1].inputs+2),*(UDINT *)(ec_slave[2].outputs+2),*(UDINT *)(ec_slave[2].inputs+2));
                 }
                 inOP = FALSE;
             }
