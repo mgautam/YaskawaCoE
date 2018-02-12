@@ -41,7 +41,7 @@ uint8 currentgroup = 0;
 
 void coeController(char *ifname)
 {
-    int i, j, chk;
+    int i, chk;
     inOP = FALSE;
     int islaveindex;
 
