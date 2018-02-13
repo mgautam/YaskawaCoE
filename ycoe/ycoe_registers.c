@@ -38,7 +38,7 @@ DINT ycoe_readreg_dint(int slavenum, uint16 regaddr) {
   return ycoex_readreg_dint(&ecx_context, slavenum, regaddr);
 }
 
-DINT ycoe_readCOparam(int slavenum, uint16 index, uint16 subindex) {
+DINT ycoe_readCOparam(int slavenum, uint16 index, uint8 subindex) {
   UDINT udintbuff;
   int udintsize = UDINT_SIZE;
   ec_SDOread(slavenum, index, subindex, 0, &udintsize, &udintbuff, EC_TIMEOUTRXM);

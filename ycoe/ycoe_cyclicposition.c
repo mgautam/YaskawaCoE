@@ -11,15 +11,12 @@
 #include "ycoe_cyclicposition.h"
 
 int ycoe_csp_setup(int slavenum) {
-    USINT usintbuff;
-    UINT  uintbuff;
-    UDINT udintbuff;
-
-    printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
+    //USINT usintbuff;
+    //UINT  uintbuff;
+    //UDINT udintbuff;
 
     /* Enable DC Mode with Sync0 Generation */
     ec_dcsync0(slavenum,1,2000000,0);//CycleTime=2ms, CycleShift=0
-    printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
     return 0;
 }
 
