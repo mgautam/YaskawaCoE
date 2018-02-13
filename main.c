@@ -157,7 +157,7 @@ void coeController(char *ifname)
                               }
 */
                               if (ycoe_csp_goto_possync(islaveindex,final_position)) {
-                                pos_cmd_sem[islaveindex]--;
+                                pos_cmd_sem[islaveindex]=0;
                               }
           					         // printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
                             }
@@ -398,7 +398,28 @@ int main(int argc, char *argv[])
     /* start cyclic part */
     osal_thread_create_rt(&thread2, 128000, &coeController, argv[1]);
     //coeController(argv[1]);
+
+    unsigned int destination;
+    int slaveaddr;
     while (1){
+      printf("Enter destination:\n\r");
+      scanf("%d",&destination);
+#ifdef _WIN32
+    WaitForSingleObject(IOmutex, INFINITE);
+#else
+    pthread_mutex_lock(&IOmutex);
+#endif
+      final_position = destination;
+      for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
+        pos_cmd_sem[slaveaddr]=1;
+      }
+#ifdef _WIN32
+    ReleaseMutex(IOmutex);
+#else
+    pthread_mutex_unlock(&IOmutex);
+#endif
+      printf("Target Position: %d\n\r",destination);
+
       osal_usleep(1000000);
     }
    // controlserver(argv[1]);
