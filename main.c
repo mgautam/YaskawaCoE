@@ -11,7 +11,7 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "zmq.h"
+//#include "zmq.h"
 
 #include "ethercat.h"
 #include "yaskawacoe.h"
@@ -324,7 +324,7 @@ OSAL_THREAD_FUNC ecatcheck( void *ptr )
 }
 
 /* Server for talking to GUI Application */
-OSAL_THREAD_FUNC controlserver(void *ptr) {
+/*OSAL_THREAD_FUNC controlserver(void *ptr) {
 	//  Socket to talk to clients
 	void *context = zmq_ctx_new();
 	void *responder = zmq_socket(context, ZMQ_REP);
@@ -367,7 +367,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
     pthread_mutex_unlock(&IOmutex);
 #endif
   }
-}
+}*/
 
 int main(int argc, char *argv[])
 {
@@ -398,7 +398,10 @@ int main(int argc, char *argv[])
     /* start cyclic part */
     osal_thread_create_rt(&thread2, 128000, &coeController, argv[1]);
     //coeController(argv[1]);
-    controlserver(argv[1]);
+    while (1){
+      osal_usleep(1000000);
+    }
+   // controlserver(argv[1]);
   }
   else
   {
