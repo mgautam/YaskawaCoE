@@ -6,7 +6,8 @@ cmake ..
 make -j8
 
 pyenv local 3.5.1
-virtualenv -p python3.5 guivenv
+#virtualenv -p python3.5 guivenv
+python -m venv guivenv
 cd guivenv
 . bin/activate
 #cp ../../gui/* .
