@@ -30,6 +30,7 @@ pthread_mutex_t IOmutex;
 
 char guiIOmap[4096];
 int guiIObytes = 0;
+int graphIndex = 44; //4+(4+4+6+6)*2
 int pos_cmd_sem[3] = {0,0,0}; // Position Command Semaphore
 DINT final_position = 0;
 //char  oloop, iloop;
@@ -44,6 +45,8 @@ void coeController(char *ifname)
     int i, chk;
     inOP = FALSE;
     int islaveindex;
+    DINT curr_position, prev_position = 0;
+    DINT slave_velocity = 0;
 
     ec_timet current_time, previous_time, diff_time;
     unsigned int act_cycle_time, min_cycle_time = 999999, max_cycle_time = 0, avg_cycle_time = 0, sum_cycle_time = 0;
@@ -87,8 +90,6 @@ void coeController(char *ifname)
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
             /* slave0 is the master. All slaves pdos are mapped to slave0 */
-            //oloop = ec_slave[0].Obytes; /* Obytes are the total number of output bytes consolidated from all slaves */
-            //iloop = ec_slave[0].Ibytes; /* Ibytes are the total number of input bytes consolidated from all slaves */
 
             printf("Request operational state for all slaves\n");
             expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
@@ -136,9 +137,9 @@ void coeController(char *ifname)
                         else if(ycoe_checkstatus(islaveindex,SW_SWITCHED_ON))
                         {
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
-                            final_position = 181920;
+                            final_position = 1500000000;
                             pos_cmd_sem[islaveindex] = 1;
-                            //ycoe_csp_set_position (1,8192);
+                            //ycoe_csp_set_position (1,181920);
                         }
                         else {
                           if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
@@ -159,7 +160,6 @@ void coeController(char *ifname)
                               if (ycoe_csp_goto_possync(islaveindex,final_position)) {
                                 pos_cmd_sem[islaveindex]--;
                               }
-          					         // printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
                             }
 
                           }
@@ -185,18 +185,14 @@ void coeController(char *ifname)
                           usedbytes += ec_slave[islaveindex].Obytes;
                       }
                       guiIObytes = usedbytes;
-/*
-          					  printf("PDO cycle %4d, WKC %d , T:%"PRId64"\n", i, wkc, ec_DCtime);
 
-                      printf(" O:");
-                      for(j = 0 ; j < oloop; j++)
-                        printf(" %2.2x", *(ec_slave[0].outputs + j));
-
-                      printf("\tI:");
-                      for(j = 0 ; j < iloop; j++)
-                        printf(" %2.2x", *(ec_slave[0].inputs + j));
-                      printf("\n");
-*/                   }
+                      if(++graphIndex >= 1000) graphIndex = 0;
+                      //memcpy(guiIOmap+44+graphIndex*4, ec_slave[2].inputs+2, 4);//Copy 2nd slave current position from 44th location
+                      curr_position = *(DINT*)(ec_slave[2].inputs+2);
+                      slave_velocity = curr_position - prev_position;
+                      memcpy(guiIOmap+44+graphIndex*4, &slave_velocity, 4);//Copy 2nd slave current velocity from 44th location
+                      prev_position = curr_position;
+                  }
 #ifdef _WIN32
 					          	ReleaseMutex(IOmutex);
 #else
@@ -330,6 +326,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 	void *responder = zmq_socket(context, ZMQ_REP);
 	int rc = zmq_bind(responder, "tcp://*:5555");
 	char buffer[15];
+//  int graphCue = 0;
 
 	while (1) {
     zmq_recv(responder, buffer, 15, 0);
@@ -372,8 +369,23 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
         printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
       }
     }
-
-    zmq_send(responder, guiIOmap, guiIObytes, 0);
+/*
+    if (graphCue) {
+      for (int i=0; i<4000;i+=4) {
+        guiIOmap[44+i]=i;
+        guiIOmap[44+i+1]=i>>8;
+      }
+      graphCue = 0;
+    } else {
+      for (int i=0; i<4000;i+=4) {
+        guiIOmap[44+i]=(4000-i);
+        guiIOmap[44+i+1]=(4000-i)>>8;
+      }
+      graphCue = 1;
+    }
+*/
+    //zmq_send(responder, guiIOmap, guiIObytes, 0);
+    zmq_send(responder, guiIOmap, 4044, 0);//graph values
 #ifdef _WIN32
     ReleaseMutex(IOmutex);
 #else

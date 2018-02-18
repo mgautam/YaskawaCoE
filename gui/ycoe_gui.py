@@ -8,20 +8,6 @@ from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.clock import Clock
 
-class RelMoveBtn(Button):
-    def move_relative(self, distance):
-        ctrlwindow=self.parent.parent.parent
-        cmdmsg='{"type":"relative","distance":"%s"}' % ( distance)
-        ctrlwindow.socket.send(cmdmsg)
-        print(cmdmsg)
-
-class RelGoBtn(Button):
-    def move_relative(self, distance):
-        ctrlwindow=self.parent.parent.parent
-        cmdmsg='{"type":"relative","distance":"%s"}' % ( distance)
-        ctrlwindow.socket.send(cmdmsg)
-        print(cmdmsg)
-
 class AbsMoveBtn(Button):
     def move_absolute(self, distance):
         ctrlwindow=self.parent.parent.parent
@@ -81,15 +67,6 @@ class MultiPosBtn(Button):
             distance=0
         ctrlwindow.socket.send(struct.pack('<BI',33,distance))
         message = ctrlwindow.socket.recv()
-
-
-class AbsGoBtn(Button):
-    def move_absolute(self, distance):
-        ctrlwindow=self.get_parent_window
-        cmdmsg=json.dumps({"type":"absolute","distance":distance})
-        ctrlwindow.socket.send(cmdmsg)
-        print(cmdmsg)
-
 
 class controlWindow(FloatLayout):
     context=None
