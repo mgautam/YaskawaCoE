@@ -142,7 +142,9 @@ void coeController(char *ifname)
                             //ycoe_csp_set_position (1,181920);
                         }
                         else {
-                          if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
+//                          if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
+                          if (ycoe_checkstatus(1,SW_OP_ENABLED) \
+                              && ycoe_checkstatus(2,SW_OP_ENABLED))
                           {
 /*                            if (pos_cmd_sem[islaveindex] > 0) {
                               ycoe_csp_set_position(islaveindex, final_position);
