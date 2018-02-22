@@ -1,10 +1,7 @@
 SET(CMAKE_SYSTEM_NAME Linux)
-#SET(CMAKE_C_COMPILER /opt/Xilinx/SDK/2017.3/gnu/aarch32/lin/gcc-arm-linux-gnueabi/bin/arm-linux-gnueabihf-gcc)
-#SET(CMAKE_CXX_COMPILER /opt/Xilinx/SDK/2017.3/gnu/aarch32/lin/gcc-arm-linux-gnueabi/bin/arm-linux-gnueabihf-g++)
-#SET(CMAKE_FIND_ROOT_PATH /opt/Xilinx/SDK/2017.3/gnu/aarch32/lin/gcc-arm-linux-gnueabi)
-SET(CMAKE_C_COMPILER /home/gautam/raspcompiler/arm-bcm2708/arm-linux-gnueabihf/bin/arm-linux-gnueabihf-gcc)
-SET(CMAKE_CXX_COMPILER /home/gautam/raspcompiler/arm-bcm2708/arm-linux-gnueabihf/bin/arm-linux-gnueabihf-gcc)
-SET(CMAKE_FIND_ROOT_PATH /home/gautam/raspcompiler/arm-bcm2708/arm-linux-gnueabihf)
+SET(CMAKE_C_COMPILER /opt/Xilinx/SDK/2017.3/gnu/aarch32/lin/gcc-arm-linux-gnueabi/bin/arm-linux-gnueabihf-gcc)
+SET(CMAKE_CXX_COMPILER /opt/Xilinx/SDK/2017.3/gnu/aarch32/lin/gcc-arm-linux-gnueabi/bin/arm-linux-gnueabihf-g++)
+SET(CMAKE_FIND_ROOT_PATH /opt/Xilinx/SDK/2017.3/gnu/aarch32/lin/gcc-arm-linux-gnueabi)
 SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 

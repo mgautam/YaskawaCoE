@@ -324,50 +324,54 @@ OSAL_THREAD_FUNC ecatcheck( void *ptr )
 }
 
 /* Server for talking to GUI Application */
-/*OSAL_THREAD_FUNC controlserver(void *ptr) {
-	//  Socket to talk to clients
-	void *context = zmq_ctx_new();
-	void *responder = zmq_socket(context, ZMQ_REP);
-	int rc = zmq_bind(responder, "tcp://*:5555");
-	char buffer[15];
+OSAL_THREAD_FUNC controlserver(void *ptr) {
+  char buffer[15];
+	FILE * filepointer = fopen("/dev/ycoe", "r");
+
 
 	while (1) {
-    zmq_recv(responder, buffer, 15, 0);
+    fread(buffer, sizeof(char) , 4, filepointer);
 
 #ifdef _WIN32
     WaitForSingleObject(IOmutex, INFINITE);
 #else
     pthread_mutex_lock(&IOmutex);
 #endif
-    if (buffer[0] == 3) {
-      USINT *slaveaddr = (USINT *)(buffer + 1);
-      DINT *targetposition = (DINT *)(buffer + 1+1);
-      if (*slaveaddr <= ec_slavecount) {
-        //ycoe_csp_set_position(*slaveaddr, *targetposition);//Vulnerable to racing conditions
-        final_position = *targetposition;
-        pos_cmd_sem[*slaveaddr]++;
-        //printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
+      if (buffer[0] == 4) {
+        printf("Read data=%x\n\r",buffer[0]);
+          // Multi axis Command
+        USINT slaveaddr;
+        final_position = 1500000000;
+        for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
+          pos_cmd_sem[slaveaddr]++;
+          //printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
+        }
       }
-    }
-    else if (buffer[0] == 33) {
-      // Multi axis Command
-      USINT slaveaddr;
-      DINT *targetposition = (DINT *)(buffer + 1);
-      final_position = *targetposition;
-      for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
-        pos_cmd_sem[slaveaddr]++;
-        //printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
+      else if (buffer[0] == 8) {
+        printf("Read data=%x\n\r",buffer[0]);
+        // Multi axis Command
+        USINT slaveaddr;
+        final_position = 0;
+        for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
+          pos_cmd_sem[slaveaddr]++;
+          //printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
+        }
       }
-    }
 
-    zmq_send(responder, guiIOmap, guiIObytes, 0);
 #ifdef _WIN32
     ReleaseMutex(IOmutex);
 #else
     pthread_mutex_unlock(&IOmutex);
 #endif
+
+    osal_usleep(500000);
+        printf("Read data=%x\n\r",buffer[0]);
+        printf("Read data=%x\n\r",buffer[1]);
+        printf("Read data=%x\n\r",buffer[2]);
+        printf("Read data=%x\n\r",buffer[3]);
   }
-}*/
+  fclose(filepointer);
+}
 
 int main(int argc, char *argv[])
 {
@@ -399,30 +403,7 @@ int main(int argc, char *argv[])
     osal_thread_create_rt(&thread2, 128000, &coeController, argv[1]);
     //coeController(argv[1]);
 
-    unsigned int destination;
-    int slaveaddr;
-    while (1){
-      printf("Enter destination:\n\r");
-      scanf("%d",&destination);
-#ifdef _WIN32
-    WaitForSingleObject(IOmutex, INFINITE);
-#else
-    pthread_mutex_lock(&IOmutex);
-#endif
-      final_position = destination;
-      for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
-        pos_cmd_sem[slaveaddr]=1;
-      }
-#ifdef _WIN32
-    ReleaseMutex(IOmutex);
-#else
-    pthread_mutex_unlock(&IOmutex);
-#endif
-      printf("Target Position: %d\n\r",destination);
-
-      osal_usleep(1000000);
-    }
-   // controlserver(argv[1]);
+    controlserver(argv[1]);
   }
   else
   {
