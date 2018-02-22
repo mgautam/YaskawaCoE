@@ -74,13 +74,15 @@ static ssize_t device_read(	struct file *file, /* see include/linux/fs.h */
 				loff_t * offset)
 {
     int error_count = 0;
+
     // copy_to_user has the format ( * to, *from, size) and returns 0 on success
     //error_count = copy_to_user(buffer, btn_mmio, 4);
-    error_count = copy_to_user(buffer, sw_mmio, 4);
+    error_count = copy_to_user(buffer, sw_mmio, 2);
+    error_count += copy_to_user(buffer+2, btn_mmio, 2);
 
     if (error_count==0){            // if true then have success
-        printk(KERN_INFO "YCOE: Sent %d to the user\n", *(unsigned int *)buffer );
-        return 0;  // clear the position to the start and return 0
+        //printk(KERN_INFO "YCOE: Sent %d to the user\n", *(unsigned int *)buffer );
+        return 4;  // clear the position to the start and return 0
     }
     else {
         printk(KERN_INFO "YCOE: Failed to send %d characters to the user\n", error_count);
@@ -141,14 +143,6 @@ MODULE_DESCRIPTION
     ("YaskawaCoE zynq helper module");
 
 #define DRIVER_NAME "YCOE"
-
-/* Simple example of how to receive command line parameters to your module.
-   Delete if you don't need them */
-unsigned myint = 0xdeadbeef;
-char *mystr = "default";
-
-module_param(myint, int, S_IRUGO);
-module_param(mystr, charp, S_IRUGO);
 
 struct ycoe_local {
 	int irq;
@@ -278,8 +272,8 @@ static struct platform_driver ycoe_driver = {
 static int __init ycoe_init(void)
 {
   int rc = 0;
-	printk("<1>Hello module world.\n");
-	printk("<1>Module parameters were (0x%08x) and \"%s\"\n", myint,mystr);
+	//printk("<1>Hello module world.\n");
+	//printk("<1>Module parameters were (0x%08x) and \"%s\"\n", myint,mystr);
 
 	/*
 	* Register the character device (atleast try)
@@ -297,12 +291,12 @@ static int __init ycoe_init(void)
 	btn_mmio = ioremap(BTN_REG,0x100);
 	sw_mmio = ioremap(SW_REG,0x100);
 
-  printk("%s: Registers mapped to btn_mmio = 0x%x  \n",__FUNCTION__,btn_mmio);
-  printk("%s: Registers mapped to sw_mmio = 0x%x  \n",__FUNCTION__,sw_mmio);
+  //printk("%s: Registers mapped to btn_mmio = 0x%x  \n",__FUNCTION__,btn_mmio);
+  //printk("%s: Registers mapped to sw_mmio = 0x%x  \n",__FUNCTION__,sw_mmio);
 
-  printk(KERN_INFO "%s The major device number is %d.\n","Registration is a success", major_num);
-	printk(KERN_INFO "If you want to talk to the device driver,\n");
-	printk(KERN_INFO "create a device file by following command. \n \n");
+  //printk(KERN_INFO "%s The major device number is %d.\n","Registration is a success", major_num);
+	//printk(KERN_INFO "If you want to talk to the device driver,\n");
+	//printk(KERN_INFO "create a device file by following command. \n \n");
 	printk(KERN_INFO "mknod %s c %d 0\n\n", DEVICE_NAME, major_num);
 
 	rc =  platform_driver_register(&ycoe_driver);
@@ -315,7 +309,7 @@ static void __exit ycoe_exit(void)
 {
   unregister_chrdev(major_num,DEVICE_NAME);
 	platform_driver_unregister(&ycoe_driver);
-	printk(KERN_ALERT "Goodbye module world.\n");
+	//printk(KERN_ALERT "Goodbye module world.\n");
 }
 
 module_init(ycoe_init);
