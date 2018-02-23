@@ -46,7 +46,8 @@ void coeController(char *ifname)
     int islaveindex;
 
     ec_timet current_time, previous_time, diff_time;
-    unsigned int act_cycle_time, min_cycle_time = 999999, max_cycle_time = 0, avg_cycle_time = 0, sum_cycle_time = 0;
+    unsigned int act_cycle_time;
+    //unsigned int min_cycle_time = 999999, max_cycle_time = 0, avg_cycle_time = 0, sum_cycle_time = 0;
 
     FILE *posfile = fopen("slave_positions.csv","w");
     fprintf(posfile, "Cycle, CycleTime, Slave1 Target Position, Actual Position, Slave2 Target Position,Actual Position,\n");
@@ -185,18 +186,7 @@ void coeController(char *ifname)
                           usedbytes += ec_slave[islaveindex].Obytes;
                       }
                       guiIObytes = usedbytes;
-/*
-          					  printf("PDO cycle %4d, WKC %d , T:%"PRId64"\n", i, wkc, ec_DCtime);
-
-                      printf(" O:");
-                      for(j = 0 ; j < oloop; j++)
-                        printf(" %2.2x", *(ec_slave[0].outputs + j));
-
-                      printf("\tI:");
-                      for(j = 0 ; j < iloop; j++)
-                        printf(" %2.2x", *(ec_slave[0].inputs + j));
-                      printf("\n");
-*/                   }
+                   }
 #ifdef _WIN32
 					          	ReleaseMutex(IOmutex);
 #else
@@ -208,14 +198,14 @@ void coeController(char *ifname)
                    current_time = osal_current_time();
                    osal_time_diff(&previous_time,&current_time,&diff_time);
                    act_cycle_time = diff_time.usec;
-                   if (act_cycle_time < min_cycle_time) min_cycle_time = act_cycle_time;
+                   /*if (act_cycle_time < min_cycle_time) min_cycle_time = act_cycle_time;
                    if (act_cycle_time > max_cycle_time) max_cycle_time = act_cycle_time;
                    sum_cycle_time += act_cycle_time;
                    avg_cycle_time = (int) (((float)sum_cycle_time)/((float)i));
-                   printf("cycle:%d act:%6d min:%6d avg:%6d max:%6d\r",i,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);
+                   printf("cycle:%d act:%6d min:%6d avg:%6d max:%6d\r",i,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);*/
                    previous_time = current_time;
 
-                   fprintf(posfile,"%d,%d,%d,%d,%d,%d,\n",i,act_cycle_time,*(UDINT *)(ec_slave[1].outputs+2),*(UDINT *)(ec_slave[1].inputs+2),*(UDINT *)(ec_slave[2].outputs+2),*(UDINT *)(ec_slave[2].inputs+2));
+                   //fprintf(posfile,"%d,%d,%d,%d,%d,%d,\n",i,act_cycle_time,*(UDINT *)(ec_slave[1].outputs+2),*(UDINT *)(ec_slave[1].inputs+2),*(UDINT *)(ec_slave[2].outputs+2),*(UDINT *)(ec_slave[2].inputs+2));
                 }
                 inOP = FALSE;
             }
@@ -337,8 +327,8 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 #else
     pthread_mutex_lock(&IOmutex);
 #endif
-      if (buffer[0] == 4) {
-        printf("Read data=%x\n\r",buffer[0]);
+      if (buffer[2] == 4) {
+        //printf("Read data=%x\n\r",buffer[0]);
           // Multi axis Command
         USINT slaveaddr;
         final_position = 1500000000;
@@ -347,8 +337,8 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
           //printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
         }
       }
-      else if (buffer[0] == 8) {
-        printf("Read data=%x\n\r",buffer[0]);
+      else if (buffer[2] == 8) {
+        //printf("Read data=%x\n\r",buffer[0]);
         // Multi axis Command
         USINT slaveaddr;
         final_position = 0;
@@ -365,10 +355,6 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 #endif
 
     osal_usleep(500000);
-        printf("Read data=%x\n\r",buffer[0]);
-        printf("Read data=%x\n\r",buffer[1]);
-        printf("Read data=%x\n\r",buffer[2]);
-        printf("Read data=%x\n\r",buffer[3]);
   }
   fclose(filepointer);
 }
