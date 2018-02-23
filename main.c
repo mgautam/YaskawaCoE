@@ -30,6 +30,7 @@ pthread_mutex_t IOmutex;
 
 char guiIOmap[4096];
 int guiIObytes = 0;
+int graphIndex = 44; //4+(4+4+6+6)*2
 int pos_cmd_sem[3] = {0,0,0}; // Position Command Semaphore
 DINT final_position = 0;
 //char  oloop, iloop;
@@ -41,9 +42,11 @@ uint8 currentgroup = 0;
 
 void coeController(char *ifname)
 {
-    int i, j, chk;
+    int i, chk;
     inOP = FALSE;
     int islaveindex;
+    DINT curr_position, prev_position = 0;
+    DINT slave_velocity = 0;
 
     ec_timet current_time, previous_time, diff_time;
     unsigned int act_cycle_time;
@@ -88,8 +91,6 @@ void coeController(char *ifname)
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
             /* slave0 is the master. All slaves pdos are mapped to slave0 */
-            //oloop = ec_slave[0].Obytes; /* Obytes are the total number of output bytes consolidated from all slaves */
-            //iloop = ec_slave[0].Ibytes; /* Ibytes are the total number of input bytes consolidated from all slaves */
 
             printf("Request operational state for all slaves\n");
             expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
@@ -139,10 +140,12 @@ void coeController(char *ifname)
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
                             final_position = 1500000000;//81920;
                             pos_cmd_sem[islaveindex] = 1;
-                            //ycoe_csp_set_position (1,8192);
+                            //ycoe_csp_set_position (1,181920);
                         }
                         else {
-                          if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
+//                          if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
+                          if (ycoe_checkstatus(1,SW_OP_ENABLED) \
+                              && ycoe_checkstatus(2,SW_OP_ENABLED))
                           {
 /*                            if (pos_cmd_sem[islaveindex] > 0) {
                               ycoe_csp_set_position(islaveindex, final_position);
@@ -160,7 +163,6 @@ void coeController(char *ifname)
                               if (ycoe_csp_goto_possync(islaveindex,final_position)) {
                                 pos_cmd_sem[islaveindex]=0;
                               }
-          					         // printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
                             }
 
                           }
@@ -317,7 +319,6 @@ OSAL_THREAD_FUNC ecatcheck( void *ptr )
 OSAL_THREAD_FUNC controlserver(void *ptr) {
   char buffer[15];
 	FILE * filepointer = fopen("/dev/ycoe", "r");
-
 
 	while (1) {
     fread(buffer, sizeof(char) , 4, filepointer);

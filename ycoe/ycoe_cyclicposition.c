@@ -11,15 +11,15 @@
 #include "ycoe_cyclicposition.h"
 
 int ycoe_csp_setup(int slavenum) {
-    USINT usintbuff;
-    UINT  uintbuff;
-    UDINT udintbuff;
+    //USINT usintbuff;
+    //UINT  uintbuff;
+    //UDINT udintbuff;
 
-    printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
+    //printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
 
     /* Enable DC Mode with Sync0 Generation */
     ec_dcsync0(slavenum,1,2000000,0);//CycleTime=2ms, CycleShift=0
-    printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
+    //printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
     return 0;
 }
 
@@ -117,29 +117,68 @@ int ycoe_csp_goto_position (int slavenum, DINT target_position) {
       }
     //}
 }
+static DINT previous_position[3] = {0};
+static DINT demand_velocity[3] = {0};
+static DINT acceleration = 320; //=3129rpm/5sec
+void ycoe_csp_accel_ramp (int slavenum, DINT target_velocity) {
+    DINT *current_position_pdo = (DINT *)(ec_slave[slavenum].inputs+2);
+
+    if (previous_position[slavenum] != *current_position_pdo) {
+      if ((target_velocity - demand_velocity[slavenum]) > acceleration) {
+        demand_velocity[slavenum] += acceleration;
+      } else if ((target_velocity - demand_velocity[slavenum]) < -acceleration) {
+        demand_velocity[slavenum] -= acceleration;
+      } else {
+        demand_velocity[slavenum] = target_velocity;
+      }
+      //printf("demand_velocity=%d\n\r",demand_velocity[slavenum]);
+    }
+    previous_position[slavenum] = *current_position_pdo;
+}
 int ycoe_csp_goto_possync (int slavenum, DINT target_position) {
     DINT *current_position_pdo1 = (DINT *)(ec_slave[1].inputs+2);
     DINT *current_position_pdo2 = (DINT *)(ec_slave[2].inputs+2);
     DINT current_position_pdo;
+
     if (*current_position_pdo1 > *current_position_pdo2) current_position_pdo = *current_position_pdo2;
     else current_position_pdo = *current_position_pdo1;
 
-    DINT *target_position_pdo = (DINT *)(ec_slave[slavenum].outputs+2);
+    // Sync both axes with the lowest position reached
+    if (*current_position_pdo1 > *current_position_pdo2) current_position_pdo = *current_position_pdo2;
+    else current_position_pdo = *current_position_pdo1;
 
-    DINT velocity = 1600000; /* 1600000 counts per 2ms */
+    DINT request_velocity = 1600000;//=3129rpm=(approx. actual)109400incs/2ms
+    DINT ramp_distance = ((demand_velocity[slavenum])/(acceleration<<2))*(demand_velocity[slavenum]>>4);//273500000;//(actual_request_velocity^2)/(2*actual_acceleration)=(109400^2)/(2*21.88)
+
+    DINT *target_position_pdo = (DINT *)(ec_slave[slavenum].outputs+2);
     //if (ycoe_csp_checkstatus(slavenum, SW_CSP_TARGET_REACHED)) {
-      if ((target_position - current_position_pdo) > velocity) {
-        *target_position_pdo = current_position_pdo + velocity;
+      if ((target_position - current_position_pdo) > ramp_distance) {
+        ycoe_csp_accel_ramp(slavenum,request_velocity);
+        *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
         //printf("Goto target request: %d\n\r", *target_position_pdo);
         return 0;
-      } else if ((target_position - current_position_pdo) < -velocity) {
-        *target_position_pdo = current_position_pdo - velocity;
+      } else if ((target_position - current_position_pdo) < -ramp_distance) {
+        ycoe_csp_accel_ramp(slavenum,-request_velocity);
+        *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
         //printf("Goto target request: %d\n\r", *target_position_pdo);
         return 0;
       } else {
-        *target_position_pdo = target_position;
+        if ((target_position - current_position_pdo) > demand_velocity[slavenum]) {
+           ycoe_csp_accel_ramp(slavenum, acceleration);
+          *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
+          return 0;
+        }
+        else if ((target_position - current_position_pdo) < -demand_velocity[slavenum]) {
+          ycoe_csp_accel_ramp(slavenum, -acceleration);
+          *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
+          return 0;
+        }
+        else {
+          *target_position_pdo = target_position;
+          demand_velocity[slavenum] = 0; // motor is going to reach target so set demand velocity to 0
+          return 1;
+        }
         //printf("Goto target request: %d\n\r", *target_position_pdo);
-        return 1;
       }
     //}
 }
