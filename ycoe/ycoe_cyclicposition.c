@@ -84,11 +84,6 @@ int ycoe_csp_set_parameters (int slavenum, UDINT velocity_offset, UDINT torque_o
     return 0;
 }
 
-int ycoe_csp_set_position (int slavenum, DINT target_position) {
-    DINT *position_pdo_address = (DINT *)(ec_slave[slavenum].outputs+2);
-    *position_pdo_address = target_position;
-    return 0;
-}
 int ycoe_csp_add_position (int slavenum, DINT position) {
     DINT *target_position_pdo = (DINT *)(ec_slave[slavenum].outputs+2);
     DINT *current_position_pdo = (DINT *)(ec_slave[slavenum].inputs+2);
@@ -117,9 +112,57 @@ int ycoe_csp_goto_position (int slavenum, DINT target_position) {
       }
     //}
 }
-static DINT previous_position[3] = {0};
-static DINT demand_velocity[3] = {0};
+
+/* Square root integer approximation */
+static UDINT sqroot(UDINT x){
+  UDINT a,b;
+  b = x;
+  a = x = 0x3f;
+  x = b/x;
+  a = x = (x+a)>>1;
+  x = b/x;
+  a = x = (x+a)>>1;
+  x = b/x;
+  a = x = (x+a)>>1;
+  x = b/x;
+  a = x = (x+a)>>1;
+  x = b/x;
+  a = x = (x+a)>>1;
+  x = b/x;
+  x = (x+a)>>1;
+  return(x);
+}
+
+
 static DINT acceleration = 320; //=3129rpm/5sec
+static DINT peak_velocity[3] = {0};
+static DINT ramp_distance[3] = {0};
+int ycoe_csp_set_position (int slavenum, DINT target_position) {
+    DINT *current_position = (DINT *)(ec_slave[slavenum].inputs+2);
+
+    DINT max_2ramp_distance = 547000000;//273500000*2;//(actual_velocity^2)/(2*actual_acceleration);//(109400^2)/(2*21.88);
+    DINT position_difference = target_position - *current_position;
+    if (position_difference < 0) position_difference = -position_difference;
+    if (position_difference > max_2ramp_distance)
+    {
+      peak_velocity[slavenum] = 1600000;
+      ramp_distance[slavenum] = 273500000;
+    } else {
+      peak_velocity[slavenum] = sqroot(acceleration);
+      // sqroot approximation is less than 1unit of 0-1048576
+      if (position_difference > 1048576) {
+        peak_velocity[slavenum] *= (sqroot(position_difference >> 20) << 10);
+      }
+      else
+      {
+        peak_velocity[slavenum] *= sqroot(position_difference);
+      }
+      ramp_distance[slavenum] = position_difference >> 1;
+    }
+    return 0;
+}
+static DINT demand_velocity[3] = {0};
+static DINT previous_position[3] = {0};
 void ycoe_csp_accel_ramp (int slavenum, DINT target_velocity) {
     DINT *current_position_pdo = (DINT *)(ec_slave[slavenum].inputs+2);
 
@@ -145,38 +188,28 @@ int ycoe_csp_goto_possync (int slavenum, DINT target_position) {
     if (*current_position_pdo1 > *current_position_pdo2) current_position_pdo = *current_position_pdo2;
     else current_position_pdo = *current_position_pdo1;
 
-    DINT request_velocity = 1600000;//=3129rpm=(approx. actual)109400incs/2ms
-    DINT ramp_distance = ((demand_velocity[slavenum])/(acceleration<<2))*(demand_velocity[slavenum]>>4);//273500000;//(actual_request_velocity^2)/(2*actual_acceleration)=(109400^2)/(2*21.88)
-
     DINT *target_position_pdo = (DINT *)(ec_slave[slavenum].outputs+2);
-    //if (ycoe_csp_checkstatus(slavenum, SW_CSP_TARGET_REACHED)) {
-      if ((target_position - current_position_pdo) > ramp_distance) {
-        ycoe_csp_accel_ramp(slavenum,request_velocity);
+    if ((target_position - current_position_pdo) > ramp_distance[slavenum]) {
+      ycoe_csp_accel_ramp(slavenum,peak_velocity[slavenum]);
+      *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
+      //printf("Goto target request: %d\n\r", *target_position_pdo);
+      return 0;
+    } else if ((target_position - current_position_pdo) < -ramp_distance[slavenum]) {
+      ycoe_csp_accel_ramp(slavenum,-peak_velocity[slavenum]);
+      *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
+      //printf("Goto target request: %d\n\r", *target_position_pdo);
+      return 0;
+    } else {
+      if ((target_position - current_position_pdo) > acceleration) {
+         ycoe_csp_accel_ramp(slavenum, acceleration);
         *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
-        //printf("Goto target request: %d\n\r", *target_position_pdo);
         return 0;
-      } else if ((target_position - current_position_pdo) < -ramp_distance) {
-        ycoe_csp_accel_ramp(slavenum,-request_velocity);
-        *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
-        //printf("Goto target request: %d\n\r", *target_position_pdo);
-        return 0;
-      } else {
-        if ((target_position - current_position_pdo) > demand_velocity[slavenum]) {
-           ycoe_csp_accel_ramp(slavenum, acceleration);
-          *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
-          return 0;
-        }
-        else if ((target_position - current_position_pdo) < -demand_velocity[slavenum]) {
-          ycoe_csp_accel_ramp(slavenum, -acceleration);
-          *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
-          return 0;
-        }
-        else {
-          *target_position_pdo = target_position;
-          demand_velocity[slavenum] = 0; // motor is going to reach target so set demand velocity to 0
-          return 1;
-        }
-        //printf("Goto target request: %d\n\r", *target_position_pdo);
       }
-    //}
+      else {
+        *target_position_pdo = target_position;
+        demand_velocity[slavenum] = 0; // motor is going to reach target so set demand velocity to 0
+        return 1;
+      }
+      //printf("Goto target request: %d\n\r", *target_position_pdo);
+    }
 }

@@ -139,26 +139,17 @@ void coeController(char *ifname)
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
                             final_position = 1500000000;
                             pos_cmd_sem[islaveindex] = 1;
-                            //ycoe_csp_set_position (1,181920);
                         }
                         else {
 //                          if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
                           if (ycoe_checkstatus(1,SW_OP_ENABLED) \
                               && ycoe_checkstatus(2,SW_OP_ENABLED))
                           {
-/*                            if (pos_cmd_sem[islaveindex] > 0) {
-                              ycoe_csp_set_position(islaveindex, final_position);
-                              pos_cmd_sem[islaveindex]--;
-                            }
-*/
-                            if (pos_cmd_sem[islaveindex] > 0) {
+                             if (pos_cmd_sem[islaveindex] > 0) {
                               // Add interpolation calculations
                               //printf("cycle %d: pos_cmd_sem[islaveindex]>0\n\r",i);
-//          					          printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
-/*                              if (ycoe_csp_goto_position(islaveindex,final_position)) {
-                                pos_cmd_sem[islaveindex]--;
-                              }
-*/
+                              //printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
+                              //if (ycoe_csp_goto_position(islaveindex,final_position)) {
                               if (ycoe_csp_goto_possync(islaveindex,final_position)) {
                                 pos_cmd_sem[islaveindex]--;
                               }
@@ -342,7 +333,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       USINT *slaveaddr = (USINT *)(buffer + 1);
       DINT *targetposition = (DINT *)(buffer + 1+1);
       if (*slaveaddr <= ec_slavecount) {
-        //ycoe_csp_set_position(*slaveaddr, *targetposition);//Vulnerable to racing conditions
+        ycoe_csp_set_position(*slaveaddr, *targetposition);
         final_position = *targetposition;
         pos_cmd_sem[*slaveaddr]++;
         printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
@@ -367,6 +358,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       DINT *targetposition = (DINT *)(buffer + 1);
       final_position = *targetposition;
       for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
+        ycoe_csp_set_position(slaveaddr, *targetposition);
         pos_cmd_sem[slaveaddr]++;
         printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
       }
