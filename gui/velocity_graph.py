@@ -1175,16 +1175,17 @@ if __name__ == '__main__':
             try:
                 self.socket.send_string("Request")
                 data = self.socket.recv()
-                graphdata = data[44:4044]
+                graphIndex = data[44]+(data[45]<<8)+(data[46]<<16)+(data[47]<<24)
+                graphdata = data[50:4050]
                 graphdata0 = graphdata[0::4]
                 graphdata1 = [x<<8 for x in graphdata[1::4]]
                 graphdata2 = [x<<16 for x in graphdata[2::4]]
                 graphdata3 = [x<<24 for x in graphdata[3::4]]
                 graphdata = [graphdata0[i] + graphdata1[i] + graphdata2[i] + graphdata3[i] for i in range(len(graphdata0))]
                 #velocities = [x - graphdata[i - 1] for i, x in enumerate(graphdata)][1:]
-                velocities = graphdata
-
-                self.plot1.points = [(i,velocities[i+500]) for i in range(-500,500)]
+                velocities = graphdata[graphIndex:] + graphdata[0:graphIndex]
+                #self.plot1.points = [(i,velocities[i+500]) for i in range(-500,500)]
+                self.plot1.points = [(i,velocities[i+500]) for i in range(-500,500) if velocities[i+500] != 0]
                 #[(x, cos(Clock.get_time() + x / 50.)) for x in range(-500, 501)]
             except zmq.ZMQError:
                 self.statuslbl.text="Status: Couldn't Connect to Server! Please restart application..."

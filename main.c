@@ -32,8 +32,6 @@ char guiIOmap[4096];
 int guiIObytes = 0;
 int graphIndex = 44; //4+(4+4+6+6)*2
 int pos_cmd_sem[3] = {0,0,0}; // Position Command Semaphore
-DINT final_position = 0;
-//char  oloop, iloop;
 char IOmap[4096];
 int expectedWKC;
 volatile int wkc;
@@ -137,7 +135,7 @@ void coeController(char *ifname)
                         else if(ycoe_checkstatus(islaveindex,SW_SWITCHED_ON))
                         {
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
-                            final_position = 1500000000;
+                            ycoe_csp_set_position(islaveindex, 1500000000);
                             pos_cmd_sem[islaveindex] = 1;
                         }
                         else {
@@ -150,7 +148,7 @@ void coeController(char *ifname)
                               //printf("cycle %d: pos_cmd_sem[islaveindex]>0\n\r",i);
                               //printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
                               //if (ycoe_csp_goto_position(islaveindex,final_position)) {
-                              if (ycoe_csp_goto_possync(islaveindex,final_position)) {
+                              if (ycoe_csp_goto_possync(islaveindex)) {
                                 pos_cmd_sem[islaveindex]--;
                               }
                             }
@@ -183,7 +181,8 @@ void coeController(char *ifname)
                       //memcpy(guiIOmap+44+graphIndex*4, ec_slave[2].inputs+2, 4);//Copy 2nd slave current position from 44th location
                       curr_position = *(DINT*)(ec_slave[2].inputs+2);
                       slave_velocity = curr_position - prev_position;
-                      memcpy(guiIOmap+44+graphIndex*4, &slave_velocity, 4);//Copy 2nd slave current velocity from 44th location
+                      memcpy(guiIOmap+44, &graphIndex, 4);//Copy current graph index position from 44th location
+                      memcpy(guiIOmap+50+graphIndex*4, &slave_velocity, 4);//Copy 2nd slave current velocity from 50th location
                       prev_position = curr_position;
                   }
 #ifdef _WIN32
@@ -334,7 +333,6 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       DINT *targetposition = (DINT *)(buffer + 1+1);
       if (*slaveaddr <= ec_slavecount) {
         ycoe_csp_set_position(*slaveaddr, *targetposition);
-        final_position = *targetposition;
         pos_cmd_sem[*slaveaddr]++;
         printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
       } else {
@@ -356,30 +354,33 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       // Multi axis Command
       USINT slaveaddr;
       DINT *targetposition = (DINT *)(buffer + 1);
-      final_position = *targetposition;
       for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
         ycoe_csp_set_position(slaveaddr, *targetposition);
         pos_cmd_sem[slaveaddr]++;
         printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
       }
     }
-/*
-    if (graphCue) {
-      for (int i=0; i<4000;i+=4) {
-        guiIOmap[44+i]=i;
-        guiIOmap[44+i+1]=i>>8;
+
+/*    if (graphCue) {
+      for (int i=0; i<4000;i+=12) {
+        guiIOmap[50+i]=i;
+        guiIOmap[50+i+1]=i>>8;
+        guiIOmap[50+i+4]=0;
+        guiIOmap[50+i+4+1]=0;
+        guiIOmap[50+i+8]=0;
+        guiIOmap[50+i+8+1]=0;
       }
       graphCue = 0;
     } else {
       for (int i=0; i<4000;i+=4) {
-        guiIOmap[44+i]=(4000-i);
-        guiIOmap[44+i+1]=(4000-i)>>8;
+        guiIOmap[50+i]=(4000-i);
+        guiIOmap[50+i+1]=(4000-i)>>8;
       }
       graphCue = 1;
     }
 */
     //zmq_send(responder, guiIOmap, guiIObytes, 0);
-    zmq_send(responder, guiIOmap, 4044, 0);//graph values
+    zmq_send(responder, guiIOmap, 4050, 0);//graph values
 #ifdef _WIN32
     ReleaseMutex(IOmutex);
 #else

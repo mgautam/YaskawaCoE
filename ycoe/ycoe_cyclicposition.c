@@ -137,11 +137,13 @@ static UDINT sqroot(UDINT x){
 static DINT acceleration = 320; //=3129rpm/5sec
 static DINT peak_velocity[3] = {0};
 static DINT ramp_distance[3] = {0};
-int ycoe_csp_set_position (int slavenum, DINT target_position) {
+static DINT target_position[3] = {0};
+int ycoe_csp_set_position (int slavenum, DINT final_position) {
     DINT *current_position = (DINT *)(ec_slave[slavenum].inputs+2);
+    target_position[slavenum] = final_position;
 
     DINT max_2ramp_distance = 547000000;//273500000*2;//(actual_velocity^2)/(2*actual_acceleration);//(109400^2)/(2*21.88);
-    DINT position_difference = target_position - *current_position;
+    DINT position_difference = final_position - *current_position;
     if (position_difference < 0) position_difference = -position_difference;
     if (position_difference > max_2ramp_distance)
     {
@@ -178,7 +180,7 @@ void ycoe_csp_accel_ramp (int slavenum, DINT target_velocity) {
     }
     previous_position[slavenum] = *current_position_pdo;
 }
-int ycoe_csp_goto_possync (int slavenum, DINT target_position) {
+int ycoe_csp_goto_possync (int slavenum) {
     DINT *current_position_pdo1 = (DINT *)(ec_slave[1].inputs+2);
     DINT *current_position_pdo2 = (DINT *)(ec_slave[2].inputs+2);
     DINT current_position_pdo;
@@ -189,24 +191,24 @@ int ycoe_csp_goto_possync (int slavenum, DINT target_position) {
     else current_position_pdo = *current_position_pdo1;
 
     DINT *target_position_pdo = (DINT *)(ec_slave[slavenum].outputs+2);
-    if ((target_position - current_position_pdo) > ramp_distance[slavenum]) {
+    if ((target_position[slavenum] - current_position_pdo) > ramp_distance[slavenum]) {
       ycoe_csp_accel_ramp(slavenum,peak_velocity[slavenum]);
       *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
       //printf("Goto target request: %d\n\r", *target_position_pdo);
       return 0;
-    } else if ((target_position - current_position_pdo) < -ramp_distance[slavenum]) {
+    } else if ((target_position[slavenum] - current_position_pdo) < -ramp_distance[slavenum]) {
       ycoe_csp_accel_ramp(slavenum,-peak_velocity[slavenum]);
       *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
       //printf("Goto target request: %d\n\r", *target_position_pdo);
       return 0;
     } else {
-      if ((target_position - current_position_pdo) > acceleration) {
+      if ((target_position[slavenum] - current_position_pdo) > acceleration) {
          ycoe_csp_accel_ramp(slavenum, acceleration);
         *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
         return 0;
       }
       else {
-        *target_position_pdo = target_position;
+        *target_position_pdo = target_position[slavenum];
         demand_velocity[slavenum] = 0; // motor is going to reach target so set demand velocity to 0
         return 1;
       }
