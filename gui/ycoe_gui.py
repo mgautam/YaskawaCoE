@@ -8,20 +8,6 @@ from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.clock import Clock
 
-class RelMoveBtn(Button):
-    def move_relative(self, distance):
-        ctrlwindow=self.parent.parent.parent
-        cmdmsg='{"type":"relative","distance":"%s"}' % ( distance)
-        ctrlwindow.socket.send(cmdmsg)
-        print(cmdmsg)
-
-class RelGoBtn(Button):
-    def move_relative(self, distance):
-        ctrlwindow=self.parent.parent.parent
-        cmdmsg='{"type":"relative","distance":"%s"}' % ( distance)
-        ctrlwindow.socket.send(cmdmsg)
-        print(cmdmsg)
-
 class AbsMoveBtn(Button):
     def move_absolute(self, distance):
         ctrlwindow=self.parent.parent.parent
@@ -71,13 +57,16 @@ class ReadCOBtn(Button):
         ctrlwindow.socket.send(struct.pack('<BBII',9,islaveaddr,iindex,isubindex))
         message = ctrlwindow.socket.recv()
 
-class AbsGoBtn(Button):
-    def move_absolute(self, distance):
-        ctrlwindow=self.get_parent_window
-        cmdmsg=json.dumps({"type":"absolute","distance":distance})
-        ctrlwindow.socket.send(cmdmsg)
-        print(cmdmsg)
-
+class MultiPosBtn(Button):
+    def move_cmdpos(self, strposition):
+        ctrlwindow=self.parent.parent.parent
+        distance=int(strposition)
+        if distance>4294967295:
+            distance=4294967295
+        elif distance<0:
+            distance=0
+        ctrlwindow.socket.send(struct.pack('<BI',33,distance))
+        message = ctrlwindow.socket.recv()
 
 class controlWindow(FloatLayout):
     context=None

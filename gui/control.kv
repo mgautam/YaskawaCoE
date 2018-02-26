@@ -52,10 +52,10 @@
             StsLabel:
                 id:_control1
         GridLayout:
-            rows:4
+            rows:5
             size_hint:None,None
-            size:300,200
-            pos:30,60
+            size:300,250
+            pos:30,10
             AbsMoveBtn:
                 text:'Goto 0xFFFFFF'
                 on_press:self.move_absolute(b'\x03\x01\xFF\xFF\xFF\x00')
@@ -68,6 +68,10 @@
                 on_press:self.move_cmdpos(1,self.cmdpos1.text)
             TextInput:
                 id:_cmdpos1
+            MultiPosBtn:
+                cmdpos:_cmdpos1
+                text:'Multi-Axis Goto'
+                on_press:self.move_cmdpos(self.cmdpos.text)
         Label:
             size_hint:None,None
             size:160,30

@@ -40,7 +40,7 @@ uint8 currentgroup = 0;
 
 void coeController(char *ifname)
 {
-    int i, j, chk;
+    int i,/* j,*/ chk;
     inOP = FALSE;
     int islaveindex;
 
@@ -67,7 +67,7 @@ void coeController(char *ifname)
                 //ycoe_ppm_get_parameters(islaveindex);
                 ycoe_ppm_setup(islaveindex);
                 ycoe_set_mode_of_operation(islaveindex,PROFILE_POSITION_MODE);
-                ycoe_ppm_set_parameters(islaveindex,10485760,1024,1048576,1048576);
+                ycoe_ppm_set_parameters(islaveindex,54700000,1024,1048576,1048576);//10485760
                 ycoe_ppm_get_parameters(islaveindex);
             }
 
@@ -337,6 +337,15 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       INT *index = (INT *)(buffer + 1+1);
       INT *subindex = (INT *)(buffer + 1+1+4);
       printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",*slaveaddr,*index,*subindex,ycoe_readCOparam(*slaveaddr, *index, *subindex));
+    }
+    else if (buffer[0] == 33) {
+      USINT slaveaddr;
+      DINT *targetposition = (DINT *)(buffer + 1);
+      for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
+        ycoe_ppm_set_position(slaveaddr, *targetposition);//Vulnerable to racing conditions
+        pos_cmd_sem[slaveaddr]++;
+        printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
+      }
     }
 
     zmq_send(responder, guiIOmap, guiIObytes, 0);
