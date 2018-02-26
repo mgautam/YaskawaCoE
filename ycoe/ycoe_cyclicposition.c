@@ -135,6 +135,7 @@ static UDINT sqroot(UDINT x){
 
 
 static DINT acceleration = 320; //=3129rpm/5sec
+static DINT acceleration50 = 16000; //=acceleration*50
 static DINT peak_velocity[3] = {0};
 static DINT ramp_distance[3] = {0};
 static DINT target_position[3] = {0};
@@ -150,17 +151,20 @@ int ycoe_csp_set_position (int slavenum, DINT final_position) {
       peak_velocity[slavenum] = 1600000;
       ramp_distance[slavenum] = 273500000;
     } else {
-      peak_velocity[slavenum] = sqroot(acceleration);
+      // Scale all the square roots up by 16 times then reduce it after final multiplication for integer method
+      peak_velocity[slavenum] = sqroot(acceleration << 4) << 2;//*sqrt(1600000 / 109400)//Scaled up by 16 before sqroot
       // sqroot approximation is less than 1unit of 0-1048576
       if (position_difference > 1048576) {
-        peak_velocity[slavenum] *= (sqroot(position_difference >> 20) << 10);
+        peak_velocity[slavenum] *= (sqroot(position_difference >> 16) << 10);//Scaled up by 16 before sqroot
       }
       else
       {
-        peak_velocity[slavenum] *= sqroot(position_difference);
+        peak_velocity[slavenum] *= sqroot(position_difference << 4);//Scaled up by 16 before sqroot
       }
+      peak_velocity[slavenum] = peak_velocity[slavenum] >> 4;//reducing finally
       ramp_distance[slavenum] = position_difference >> 1;
     }
+    //printf("Peak velocity %d=%d\n\r",slavenum, peak_velocity[slavenum]);
     return 0;
 }
 static DINT demand_velocity[3] = {0};
@@ -202,8 +206,13 @@ int ycoe_csp_goto_possync (int slavenum) {
       //printf("Goto target request: %d\n\r", *target_position_pdo);
       return 0;
     } else {
-      if ((target_position[slavenum] - current_position_pdo) > acceleration) {
-         ycoe_csp_accel_ramp(slavenum, acceleration);
+      if ((target_position[slavenum] - current_position_pdo) > acceleration50) {
+         ycoe_csp_accel_ramp(slavenum, acceleration50);
+        *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
+        return 0;
+      }
+      else if ((target_position[slavenum] - current_position_pdo) < -acceleration50) {
+         ycoe_csp_accel_ramp(slavenum, -acceleration50);
         *target_position_pdo = current_position_pdo + demand_velocity[slavenum];
         return 0;
       }

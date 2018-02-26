@@ -135,8 +135,8 @@ void coeController(char *ifname)
                         else if(ycoe_checkstatus(islaveindex,SW_SWITCHED_ON))
                         {
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
-                            ycoe_csp_set_position(islaveindex, 1500000000);
-                            pos_cmd_sem[islaveindex] = 1;
+                            //ycoe_csp_set_position(islaveindex, 1500000000);
+                            //pos_cmd_sem[islaveindex] = 1;
                         }
                         else {
 //                          if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
