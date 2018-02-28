@@ -25,7 +25,7 @@ int ycoe_csp_setup(int slavenum) {
 
 
 int ycoe_csp_checkstatus (int slavenum, UINT targetstatus) {
-  UINT *statusword = (UINT *)(ec_slave[slavenum].inputs+2);
+  UINT *statusword = (UINT *)(ec_slave[slavenum].inputs);
   int retval = 0;
 
   if (targetstatus & *statusword) retval++;
