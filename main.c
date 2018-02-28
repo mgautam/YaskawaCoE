@@ -136,14 +136,14 @@ void coeController(char *ifname)
                         else if(ycoe_checkstatus(islaveindex,SW_SWITCHED_ON))
                         {
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
-                            ycoe_ppm_set_position (islaveindex,8192);
-                            pos_cmd_sem[islaveindex] = 1;
+                            //ycoe_ppm_set_position (islaveindex,8192);
+                            //pos_cmd_sem[islaveindex] = 1;
                         }
                         else {
                           if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
                           {
                             if (ycoe_ppm_checkcontrol(islaveindex, CW_PPM_SNPI2) && \
-                                ycoe_ppm_checkstatus(islaveindex,SW_SETPOINT_ACK)) {
+                                ycoe_ppm_checkstatus(islaveindex,SW_PPM_SETPOINT_ACK)) {
                               pos_cmd_sem[islaveindex]--;
                               ycoe_setcontrolword(islaveindex,CW_ENABLEOP | CW_PPM_SNPI1);
                             }
@@ -302,7 +302,32 @@ OSAL_THREAD_FUNC ecatcheck( void *ptr )
 
 /* Server for talking to GUI Application */
 OSAL_THREAD_FUNC controlserver(void *ptr) {
-	//  Socket to talk to clients
+  int position_request = 1500000000;
+  while (1) {
+      osal_usleep(900000);
+#ifdef _WIN32
+      WaitForSingleObject(IOmutex, INFINITE);
+#else
+      pthread_mutex_lock(&IOmutex);
+#endif
+      if (ycoe_ppm_checkstatus(1, SW_PPM_TARGET_REACHED) &&
+          ycoe_ppm_checkstatus(2, SW_PPM_TARGET_REACHED)) {
+          if (position_request > 0) position_request = 0;
+          else position_request = 300000000;
+          ycoe_ppm_set_position(1, position_request);
+          ycoe_ppm_set_position(2, position_request);
+          pos_cmd_sem[1]++;
+          pos_cmd_sem[2]++;
+      }
+#ifdef _WIN32
+      ReleaseMutex(IOmutex);
+#else
+      pthread_mutex_unlock(&IOmutex);
+#endif
+  }
+
+
+  //  Socket to talk to clients
 	void *context = zmq_ctx_new();
 	void *responder = zmq_socket(context, ZMQ_REP);
 	int rc = zmq_bind(responder, "tcp://*:5555");
