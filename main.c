@@ -11,8 +11,6 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "zmq.h"
-
 #include "ethercat.h"
 #include "yaskawacoe.h"
 
@@ -136,14 +134,14 @@ void coeController(char *ifname)
                         else if(ycoe_checkstatus(islaveindex,SW_SWITCHED_ON))
                         {
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
-                            ycoe_ppm_set_position (islaveindex,8192);
-                            pos_cmd_sem[islaveindex] = 1;
+                            //ycoe_ppm_set_position (islaveindex,8192);
+                            //pos_cmd_sem[islaveindex] = 1;
                         }
                         else {
                           if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
                           {
                             if (ycoe_ppm_checkcontrol(islaveindex, CW_PPM_SNPI2) && \
-                                ycoe_ppm_checkstatus(islaveindex,SW_SETPOINT_ACK)) {
+                                ycoe_ppm_checkstatus(islaveindex,SW_PPM_SETPOINT_ACK)) {
                               pos_cmd_sem[islaveindex]--;
                               ycoe_setcontrolword(islaveindex,CW_ENABLEOP | CW_PPM_SNPI1);
                             }
@@ -302,53 +300,24 @@ OSAL_THREAD_FUNC ecatcheck( void *ptr )
 
 /* Server for talking to GUI Application */
 OSAL_THREAD_FUNC controlserver(void *ptr) {
-	//  Socket to talk to clients
-	void *context = zmq_ctx_new();
-	void *responder = zmq_socket(context, ZMQ_REP);
-	int rc = zmq_bind(responder, "tcp://*:5555");
-	char buffer[15];
+  int position_request = 300000000;
 
 	while (1) {
-    zmq_recv(responder, buffer, 15, 0);
-
+    osal_usleep(900000);
 #ifdef _WIN32
     WaitForSingleObject(IOmutex, INFINITE);
 #else
     pthread_mutex_lock(&IOmutex);
 #endif
-    if (buffer[0] == 3) {
-      USINT *slaveaddr = (USINT *)(buffer + 1);
-      DINT *targetposition = (DINT *)(buffer + 1+1);
-      if (*slaveaddr <= ec_slavecount) {
-        ycoe_ppm_set_position(*slaveaddr, *targetposition);//Vulnerable to racing conditions
-        pos_cmd_sem[*slaveaddr]++;
-        printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
-      } else {
-        printf("Invalid slave address:%x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
-      }
+    if (ycoe_ppm_checkstatus(1, SW_PPM_TARGET_REACHED) &&
+        ycoe_ppm_checkstatus(2, SW_PPM_TARGET_REACHED)) {
+        if (position_request > 0) position_request = 0;
+        else position_request = 300000000;
+        ycoe_ppm_set_position(1, position_request);
+        ycoe_ppm_set_position(2, position_request);
+        pos_cmd_sem[1]++;
+        pos_cmd_sem[2]++;
     }
-    else if (buffer[0] == 6) {
-      USINT *slaveaddr = (USINT *)(buffer + 1);
-      INT *regaddr = (INT *)(buffer + 1+1);
-      printf("Slave %x Register %x Content = %x\n\r",*slaveaddr,*regaddr,ycoe_readreg_dint(*slaveaddr, *regaddr));
-    }
-    else if (buffer[0] == 9) {
-      USINT *slaveaddr = (USINT *)(buffer + 1);
-      INT *index = (INT *)(buffer + 1+1);
-      INT *subindex = (INT *)(buffer + 1+1+4);
-      printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",*slaveaddr,*index,*subindex,ycoe_readCOparam(*slaveaddr, *index, *subindex));
-    }
-    else if (buffer[0] == 33) {
-      USINT slaveaddr;
-      DINT *targetposition = (DINT *)(buffer + 1);
-      for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
-        ycoe_ppm_set_position(slaveaddr, *targetposition);//Vulnerable to racing conditions
-        pos_cmd_sem[slaveaddr]++;
-        printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
-      }
-    }
-
-    zmq_send(responder, guiIOmap, guiIObytes, 0);
 #ifdef _WIN32
     ReleaseMutex(IOmutex);
 #else

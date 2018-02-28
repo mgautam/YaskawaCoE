@@ -21,24 +21,21 @@ include_directories(SOEM/soem)
 include_directories(SOEM/osal)
 include_directories(SOEM/osal/${OS})
 include_directories(SOEM/oshw/${OS})
-include_directories(libzmq/include)
 include_directories(ycoe)
 
 # build the SOEM driver and zeromq driver
 add_subdirectory(SOEM)
-add_subdirectory(libzmq)
 
 # build the executable
 #include_directories(SOEM)
 #link_directories(SOEM)
 file(GLOB YCOE_SOURCES ycoe/*.c)
-add_executable(yaskawaCoE 
+add_executable(yaskawaCoE
   ${YCOE_SOURCES}
   main.c)
 
 # link the object file with the soem and libzmq library
 target_link_libraries(yaskawaCoE soem)
-target_link_libraries(yaskawaCoE libzmq)
 
 # set install path
 install(TARGETS yaskawaCoE DESTINATION bin)
