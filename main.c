@@ -317,6 +317,33 @@ OSAL_THREAD_FUNC ecatcheck( void *ptr )
 
 /* Server for talking to GUI Application */
 OSAL_THREAD_FUNC controlserver(void *ptr) {
+
+  /* Automatic Motion Sequence */
+  int position_request = 300000000;
+  while (1) {
+     osal_usleep(900000);
+#ifdef _WIN32
+    WaitForSingleObject(IOmutex, INFINITE);
+#else
+    pthread_mutex_lock(&IOmutex);
+#endif
+     if (ycoe_csp_checkstatus(1, SW_CSP_TARGET_REACHED) &&
+          ycoe_csp_checkstatus(2, SW_CSP_TARGET_REACHED)) {
+        if (position_request > 0) position_request =0;
+        else position_request =300000000;
+        ycoe_csp_set_position(1, position_request);
+        ycoe_csp_set_position(2, position_request);
+        pos_cmd_sem[1]++;
+        pos_cmd_sem[2]++;
+      }
+#ifdef _WIN32
+    ReleaseMutex(IOmutex);
+#else
+    pthread_mutex_unlock(&IOmutex);
+#endif
+  }
+
+/* user buttons - semi-automatic motion sequence */
   char buffer[15];
 	FILE * filepointer = fopen("/dev/ycoe", "r");
 

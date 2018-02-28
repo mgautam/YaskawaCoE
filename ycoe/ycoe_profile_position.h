@@ -19,9 +19,9 @@ enum {
 } cw_ppm_bits68; /* Control Word Profile position mode bits 6 & 8 */
 
 enum {
-  SW_TARGET_REACHED = 0x0400,
-  SW_SETPOINT_ACK   = 0x1000,
-  SW_FOLLOWING_ERR  = 0x2000
+  SW_PPM_TARGET_REACHED = 0x0400,
+  SW_PPM_SETPOINT_ACK   = 0x1000,
+  SW_PPM_FOLLOW_ERR  = 0x2000
 } sw_ppm_bits1013;
 
 int ycoe_ppm_setup(int slavenum); 
