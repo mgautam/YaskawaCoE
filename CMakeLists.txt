@@ -1,3 +1,10 @@
+SET(CMAKE_SYSTEM_NAME Linux)
+SET(CMAKE_C_COMPILER /home/gautam/rpitools/arm-bcm2708/arm-linux-gnueabihf/bin/arm-linux-gnueabihf-gcc)
+SET(CMAKE_CXX_COMPILER /home/gautam/rpitools/arm-bcm2708/arm-linux-gnueabihf/bin/arm-linux-gnueabihf-g++)
+SET(CMAKE_FIND_ROOT_PATH /home/gautam/rpitools/arm-bcm2708/arm-linux-gnueabihf)
+SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
 cmake_minimum_required (VERSION 2.8.4)
 project (YaskawaCoE)
 
