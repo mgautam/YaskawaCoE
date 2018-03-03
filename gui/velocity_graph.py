@@ -1123,8 +1123,12 @@ if __name__ == '__main__':
     class GraphApp(App):
         context=None
         socket=None
+        slave1data=None
+        slave2data=None
         def __init__(self, **kwargs):
             supret = super().__init__(**kwargs)
+            self.slave1data=[0]*15001
+            self.slave2data=[0]*15001
             self.context = zmq.Context()
             self.socket = self.context.socket(zmq.REQ)
             self.socket.connect("tcp://localhost:5555")
@@ -1146,9 +1150,9 @@ if __name__ == '__main__':
 
             graph1 = Graph(
                 xlabel='500 samples/sec',
-                ylabel='Slave2 Velocity',
+                ylabel='Slave Velocity',
                 x_ticks_minor=5,
-                x_ticks_major=100,
+                x_ticks_major=1000,
                 y_ticks_major=50000,
                 y_grid_label=True,
                 x_grid_label=True,
@@ -1157,16 +1161,16 @@ if __name__ == '__main__':
                 ylog=False,
                 x_grid=True,
                 y_grid=True,
-                xmin=-500,
-                xmax=500,
+                xmin=-7500,
+                xmax=7500,
                 ymin=-125000,
                 ymax=125000,
                 **graph_theme)
 
-            plot1 = MeshLinePlot(color=next(colors))
-            #plot1.points = [(x / 10., cos(x / 50.)) for x in range(-500, 501)]
-            self.plot1 = plot1  # this is the moving graph, so keep a reference
-            graph1.add_plot(plot1)
+            self.plot1 = MeshLinePlot(color=next(colors))
+            self.plot2 = MeshLinePlot(color=next(colors))
+            graph1.add_plot(self.plot1)
+            graph1.add_plot(self.plot2)
             b.add_widget(graph1)
             Clock.schedule_interval(self.update_points, 0.9 )
             return b
@@ -1182,10 +1186,24 @@ if __name__ == '__main__':
                 graphdata2 = [x<<16 for x in graphdata[2::4]]
                 graphdata3 = [x<<24 for x in graphdata[3::4]]
                 graphdata = [graphdata0[i] + graphdata1[i] + graphdata2[i] + graphdata3[i] for i in range(len(graphdata0))]
-                #velocities = [x - graphdata[i - 1] for i, x in enumerate(graphdata)][1:]
-                velocities = graphdata[graphIndex:] + graphdata[0:graphIndex]
-                #self.plot1.points = [(i,velocities[i+500]) for i in range(-500,500)]
-                self.plot1.points = [(i,velocities[i+500]) for i in range(-500,500) if velocities[i+500] != 0]
+
+                slave1positions = graphdata[graphIndex:499] + graphdata[0:graphIndex]
+                slave2positions = graphdata[(500+graphIndex):] + graphdata[500:(500+graphIndex)]
+                #self.slave1data.extend(slave1positions)
+                #self.slave1data = self.slave1data[len(slave1positions):]
+                #self.slave2data.extend(slave2positions)
+                #self.slave2data = self.slave2data[len(slave2positions):]
+
+
+                slave1velocities = [x - slave1positions[i - 1] for i, x in enumerate(slave1positions)][1:]
+                slave2velocities = [x - slave2positions[i - 1] for i, x in enumerate(slave2positions)][1:]
+                self.slave1data.extend(slave1velocities)
+                self.slave1data = self.slave1data[len(slave1velocities):]
+                self.slave2data.extend(slave2velocities)
+                self.slave2data = self.slave2data[len(slave2velocities):]
+
+                self.plot1.points = [(i,self.slave1data[i+7500]) for i in range(-7500,7500)]
+                self.plot2.points = [(i,self.slave2data[i+7500]) for i in range(-7500,7500)]
                 #[(x, cos(Clock.get_time() + x / 50.)) for x in range(-500, 501)]
             except zmq.ZMQError:
                 self.statuslbl.text="Status: Couldn't Connect to Server! Please restart application..."

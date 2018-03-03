@@ -177,12 +177,14 @@ void coeController(char *ifname)
                       }
                       guiIObytes = usedbytes;
 
-                      if(++graphIndex >= 1000) graphIndex = 0;
-                      //memcpy(guiIOmap+44+graphIndex*4, ec_slave[2].inputs+2, 4);//Copy 2nd slave current position from 44th location
-                      curr_position = *(DINT*)(ec_slave[2].inputs+2);
+                      curr_position = *(DINT*)(ec_slave[1].inputs+2);
                       slave_velocity = curr_position - prev_position;
-                      memcpy(guiIOmap+44, &graphIndex, 4);//Copy current graph index position from 44th location
-                      memcpy(guiIOmap+50+graphIndex*4, &slave_velocity, 4);//Copy 2nd slave current velocity from 50th location
+                      if (slave_velocity != 0) {
+                        if(++graphIndex >= 500) graphIndex = 0;
+                        memcpy(guiIOmap+44, &graphIndex, 4);//Copy current graph index position from 44th location
+                        memcpy(guiIOmap+50+(graphIndex<<2), ec_slave[1].inputs+2, 4);//Copy 1st slave current position from 50th location
+                        memcpy(guiIOmap+2050+(graphIndex<<2), ec_slave[2].inputs+2, 4);//Copy 2nd slave current position from 50+500*4th location
+                      }
                       prev_position = curr_position;
                   }
 #ifdef _WIN32
@@ -318,7 +320,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 	void *responder = zmq_socket(context, ZMQ_REP);
 	int rc = zmq_bind(responder, "tcp://*:5555");
 	char buffer[15];
-//  int graphCue = 0;
+  //int graphCue = 0;
 
 	while (1) {
     zmq_recv(responder, buffer, 15, 0);
@@ -360,21 +362,25 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
         printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
       }
     }
-
-/*    if (graphCue) {
-      for (int i=0; i<4000;i+=12) {
-        guiIOmap[50+i]=i;
-        guiIOmap[50+i+1]=i>>8;
-        guiIOmap[50+i+4]=0;
-        guiIOmap[50+i+4+1]=0;
-        guiIOmap[50+i+8]=0;
-        guiIOmap[50+i+8+1]=0;
+/*
+    if (graphCue) {
+      for (int i=0; i<2000;i+=4) {
+        guiIOmap[50+i]=(i<<5);
+        guiIOmap[50+i+1]=(i<<5)>>8;
+        guiIOmap[50+i+2]=(i<<5)>>16;
+        guiIOmap[2050+i]=(32000+(i<<5));
+        guiIOmap[2050+i+1]=(32000+(i<<5))>>8;
+        guiIOmap[2050+i+2]=(32000+(i<<5))>>16;
       }
       graphCue = 0;
     } else {
-      for (int i=0; i<4000;i+=4) {
-        guiIOmap[50+i]=(4000-i);
-        guiIOmap[50+i+1]=(4000-i)>>8;
+      for (int i=0; i<2000;i+=4) {
+        guiIOmap[50+i]=((2000-i)<<5);
+        guiIOmap[50+i+1]=((2000-i)<<5)>>8;
+        guiIOmap[50+i+2]=((2000-i)<<5)>>16;
+        guiIOmap[2050+i]=(32000+(2000-i)<<5);
+        guiIOmap[2050+i+1]=(32000+((2000-i)<<5))>>8;
+        guiIOmap[2050+i+2]=(32000+((2000-i)<<5))>>16;
       }
       graphCue = 1;
     }
