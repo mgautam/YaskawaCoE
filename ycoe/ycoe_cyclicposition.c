@@ -8,6 +8,7 @@
 #include "ethercat.h"
 #include "ycoetype.h"
 #include "ycoe_registers.h"
+#include "ycoe_math.h"
 #include "ycoe_cyclicposition.h"
 
 int ycoe_csp_setup(int slavenum) {
@@ -223,4 +224,38 @@ int ycoe_csp_goto_possync (int slavenum) {
       }
       //printf("Goto target request: %d\n\r", *target_position_pdo);
     }
+}
+
+
+static UDINT **position_array;
+static unsigned int period_in_cycles = 0;
+static int position_index = 0;
+static DINT start_position[3] = {0};
+int ycoe_csp_setup_posarray(int num_slaves, unsigned int samples_per_second, unsigned int period_in_secs) {
+  position_array = malloc(num_slaves+1);
+
+  period_in_cycles = samples_per_second * period_in_secs;
+  sinfill(position_array[1], 1600000.0, period_in_cycles);
+  cosfill(position_array[2], 1600000.0, period_in_cycles);
+
+  return 0;
+}
+int ycoe_csp_follow_posarray (int slavenum) {
+    DINT *current_position_pdo1 = (DINT *)(ec_slave[1].inputs+2);
+    DINT *current_position_pdo2 = (DINT *)(ec_slave[2].inputs+2);
+
+    DINT tolerance = 10;//counts
+
+    // Sync both axes with the position array
+    if ((((*current_position_pdo1 - position_array[1][position_index]) < tolerance) || ((*current_position_pdo1 - position_array[1][position_index]) > -tolerance)) &&
+        (((*current_position_pdo2 - position_array[2][position_index]) < tolerance) || ((*current_position_pdo2 - position_array[2][position_index]) > -tolerance)))
+    {
+      position_index++;
+      if (position_index >= period_in_cycles) position_index = 0;
+    }
+
+    DINT *target_position_pdo = (DINT *)(ec_slave[slavenum].outputs+2);
+    *target_position_pdo = position_array[slavenum][position_index];
+
+    return 0;
 }

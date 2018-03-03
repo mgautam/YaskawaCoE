@@ -75,6 +75,7 @@ void coeController(char *ifname)
                 ycoe_set_mode_of_operation(islaveindex,CYCLIC_SYNC_POSITION_MODE);
                 ycoe_csp_set_parameters(islaveindex,0,0,1048576,1048576);
                 //ycoe_csp_get_parameters(islaveindex);
+ycoe_csp_setup_posarray(2,500,5);
             }
 
 
@@ -148,9 +149,10 @@ void coeController(char *ifname)
                               //printf("cycle %d: pos_cmd_sem[islaveindex]>0\n\r",i);
                               //printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
                               //if (ycoe_csp_goto_position(islaveindex,final_position)) {
-                              if (ycoe_csp_goto_possync(islaveindex)) {
+                              /*if (ycoe_csp_goto_possync(islaveindex)) {
                                 pos_cmd_sem[islaveindex]--;
-                              }
+                              }*/
+                               ycoe_csp_follow_posarray(islaveindex);
                             }
 
                           }
