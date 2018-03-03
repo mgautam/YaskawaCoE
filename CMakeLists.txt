@@ -32,11 +32,12 @@ add_subdirectory(libzmq)
 #include_directories(SOEM)
 #link_directories(SOEM)
 file(GLOB YCOE_SOURCES ycoe/*.c)
-add_executable(yaskawaCoE 
+add_executable(yaskawaCoE
   ${YCOE_SOURCES}
   main.c)
 
 # link the object file with the soem and libzmq library
+target_link_libraries(yaskawaCoE m)
 target_link_libraries(yaskawaCoE soem)
 target_link_libraries(yaskawaCoE libzmq)
 

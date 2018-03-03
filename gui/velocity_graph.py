@@ -1119,6 +1119,7 @@ if __name__ == '__main__':
     from kivy.utils import get_color_from_hex as rgb
     from kivy.uix.boxlayout import BoxLayout
     from kivy.app import App
+    import struct
 
     class GraphApp(App):
         context=None
@@ -1172,20 +1173,22 @@ if __name__ == '__main__':
             graph1.add_plot(self.plot1)
             graph1.add_plot(self.plot2)
             b.add_widget(graph1)
-            Clock.schedule_interval(self.update_points, 0.9 )
+            Clock.schedule_interval(self.update_points, 1.0 )
             return b
 
         def update_points(self, *args):
             try:
                 self.socket.send_string("Request")
                 data = self.socket.recv()
-                graphIndex = data[44]+(data[45]<<8)+(data[46]<<16)+(data[47]<<24)
-                graphdata = data[50:4050]
-                graphdata0 = graphdata[0::4]
-                graphdata1 = [x<<8 for x in graphdata[1::4]]
-                graphdata2 = [x<<16 for x in graphdata[2::4]]
-                graphdata3 = [x<<24 for x in graphdata[3::4]]
-                graphdata = [graphdata0[i] + graphdata1[i] + graphdata2[i] + graphdata3[i] for i in range(len(graphdata0))]
+                #graphIndex = data[44]+(data[45]<<8)+(data[46]<<16)+(data[47]<<24)
+                #print(graphIndex)
+                graphIndex = struct.unpack("I",data[44:48])[0]
+                graphdata = [struct.unpack("i",data[i:i+4])[0] for i in range(50,4050,4)]
+                #graphdata0 = graphdata[0::4]
+                #graphdata1 = [x<<8 for x in graphdata[1::4]]
+                #graphdata2 = [x<<16 for x in graphdata[2::4]]
+                #graphdata3 = [x<<24 for x in graphdata[3::4]]
+                #graphdata = [graphdata0[i] + graphdata1[i] + graphdata2[i] + graphdata3[i] for i in range(len(graphdata0))]
 
                 slave1positions = graphdata[graphIndex:499] + graphdata[0:graphIndex]
                 slave2positions = graphdata[(500+graphIndex):] + graphdata[500:(500+graphIndex)]

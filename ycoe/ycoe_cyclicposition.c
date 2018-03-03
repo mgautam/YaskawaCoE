@@ -227,16 +227,26 @@ int ycoe_csp_goto_possync (int slavenum) {
 }
 
 
-static UDINT **position_array;
+//extern DINT **position_array;
+static DINT **position_array;
+//extern unsigned int period_in_cycles;
 static unsigned int period_in_cycles = 0;
 static int position_index = 0;
 static DINT start_position[3] = {0};
 int ycoe_csp_setup_posarray(int num_slaves, unsigned int samples_per_second, unsigned int period_in_secs) {
-  position_array = malloc(num_slaves+1);
+  position_array = malloc((num_slaves+1) * sizeof(DINT *));
 
   period_in_cycles = samples_per_second * period_in_secs;
-  sinfill(position_array[1], 1600000.0, period_in_cycles);
-  cosfill(position_array[2], 1600000.0, period_in_cycles);
+  for (int i=1; i<=num_slaves; i++)
+    position_array[i] = (DINT *) malloc(sizeof(DINT) * period_in_cycles);
+
+  // Circular Interpolation
+  sinfill(position_array[1], 8000000.0, period_in_cycles);
+  cosfill(position_array[2], 8000000.0, period_in_cycles);
+
+  // Other graphs can be used to fill these position arrays
+  // The two arrays have to be equal in size 
+  // also keep in mind the max velocities and accelerations
 
   return 0;
 }

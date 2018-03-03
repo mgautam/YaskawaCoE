@@ -20,6 +20,9 @@
 #include <pthread.h>
 #endif
 
+//extern DINT **position_array;
+//extern unsigned int period_in_cycles;
+
 #define EC_TIMEOUTMON 500
 
 #ifdef _WIN32
@@ -52,6 +55,19 @@ void coeController(char *ifname)
     FILE *posfile = fopen("slave_positions.csv","w");
     fprintf(posfile, "Cycle, CycleTime, Slave1 Target Position, Actual Position, Slave2 Target Position,Actual Position,\n");
 
+/*
+ycoe_csp_setup_posarray(2, 500, 1);
+int position_index = 0;
+while (1) {
+  if(++position_index >= period_in_cycles) position_index = 0;
+  if(++graphIndex >= 500) graphIndex = 0;
+  memcpy(guiIOmap+44, &graphIndex, 4);//Copy current graph index position from 44th location
+  memcpy(guiIOmap+50+(graphIndex<<2), position_array[1]+position_index, 4);//Copy 1st slave current position from 50th location
+  memcpy(guiIOmap+2050+(graphIndex<<2), position_array[2]+position_index, 4);//Copy 2nd slave current position from 50+500*4th location
+  osal_usleep(2000);
+}
+*/
+
     /* initialise SOEM, bind socket to ifname */
     if (ec_init(ifname))
     {
@@ -77,7 +93,6 @@ void coeController(char *ifname)
                 //ycoe_csp_get_parameters(islaveindex);
 ycoe_csp_setup_posarray(2,500,5);
             }
-
 
             /*
                ec_config_map reads PDO mapping and set local buffer for PDO exchange.
