@@ -237,7 +237,8 @@ int ycoe_csp_setup_posarray(int num_slaves, unsigned int samples_per_second, uns
   position_array = malloc((num_slaves+1) * sizeof(DINT *));
 
   period_in_cycles = samples_per_second * period_in_secs;
-  for (int i=1; i<=num_slaves; i++)
+  int i;
+  for (i=1; i<=num_slaves; i++)
     position_array[i] = (DINT *) malloc(sizeof(DINT) * period_in_cycles);
 
   // Circular Interpolation
