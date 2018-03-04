@@ -14,6 +14,16 @@ if(WIN32)
   set(OS_LIBS wpcap.lib Packet.lib Ws2_32.lib Winmm.lib)
 elseif(UNIX)
   set(OS "linux")
+
+  #xenomai cobalt flags
+  set(XENOMAI_XENO_CONFIG /usr/xenomai/bin/xeno-config)
+  execute_process(COMMAND ${XENOMAI_XENO_CONFIG} --posix --ldflags OUTPUT_VARIABLE XENOMAI_LDFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process(COMMAND ${XENOMAI_XENO_CONFIG} --posix --cflags OUTPUT_VARIABLE XENOMAI_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+  message("CFLAGS ${XENOMAI_CFLAGS}")
+  message("LDFLAGS ${XENOMAI_LDFLAGS}")
+  set(CMAKE_C_FLAGS ${XENOMAI_CFLAGS})
+  set(CMAKE_EXE_LINKER_FLAGS ${XENOMAI_LDFLAGS})
+  #xenomai cobalt flags
 endif()
 
 # add include folder for finding *.h files
