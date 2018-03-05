@@ -91,7 +91,7 @@ while (1) {
                 ycoe_set_mode_of_operation(islaveindex,CYCLIC_SYNC_POSITION_MODE);
                 ycoe_csp_set_parameters(islaveindex,0,0,1048576,1048576);
                 //ycoe_csp_get_parameters(islaveindex);
-ycoe_csp_setup_posarray(2,500,5);
+ycoe_csp_setup_posarray(2,500,15);
             }
 
             /*
@@ -152,7 +152,7 @@ ycoe_csp_setup_posarray(2,500,5);
                         {
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
                             //ycoe_csp_set_position(islaveindex, 1500000000);
-                            //pos_cmd_sem[islaveindex] = 1;
+                            pos_cmd_sem[islaveindex] = 1;
                         }
                         else {
 //                          if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))

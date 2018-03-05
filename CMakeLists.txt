@@ -16,13 +16,25 @@ elseif(UNIX)
   set(OS "linux")
 
   #xenomai cobalt flags
-  set(XENOMAI_XENO_CONFIG /usr/xenomai/bin/xeno-config)
-  execute_process(COMMAND ${XENOMAI_XENO_CONFIG} --posix --ldflags OUTPUT_VARIABLE XENOMAI_LDFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
-  execute_process(COMMAND ${XENOMAI_XENO_CONFIG} --posix --cflags OUTPUT_VARIABLE XENOMAI_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
-  message("CFLAGS ${XENOMAI_CFLAGS}")
-  message("LDFLAGS ${XENOMAI_LDFLAGS}")
-  set(CMAKE_C_FLAGS ${XENOMAI_CFLAGS})
-  set(CMAKE_EXE_LINKER_FLAGS ${XENOMAI_LDFLAGS})
+  #set Xenomai Search Paths
+  set (XENOMAI_SEARCH_PATH /usr/local/xenomai /usr/xenomai /usr/include/xenomai $ENV{XENOMAI_ROOT_DIR})
+
+  #find xeno-config.h
+  find_path ( XENOMAI_DIR
+    NAMES include/xeno_config.h xeno_config.h
+    PATHS ${XENOMAI_SEARCH_PATH} )
+
+  # did we find xeno_config.h?
+  if ( XENOMAI_DIR )
+    message (STATUS "xenomai found: \"${XENOMAI_DIR}\"")
+    set(XENOMAI_XENO_CONFIG /usr/xenomai/bin/xeno-config)
+    execute_process(COMMAND ${XENOMAI_XENO_CONFIG} --posix --ldflags OUTPUT_VARIABLE XENOMAI_LDFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${XENOMAI_XENO_CONFIG} --posix --cflags OUTPUT_VARIABLE XENOMAI_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    message("CFLAGS ${XENOMAI_CFLAGS}")
+    message("LDFLAGS ${XENOMAI_LDFLAGS}")
+    set(CMAKE_C_FLAGS ${XENOMAI_CFLAGS})
+    set(CMAKE_EXE_LINKER_FLAGS ${XENOMAI_LDFLAGS})
+  endif()
   #xenomai cobalt flags
 endif()
 

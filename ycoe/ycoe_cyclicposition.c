@@ -242,8 +242,8 @@ int ycoe_csp_setup_posarray(int num_slaves, unsigned int samples_per_second, uns
     position_array[i] = (DINT *) malloc(sizeof(DINT) * period_in_cycles);
 
   // Circular Interpolation
-  sinfill(position_array[1], 8000000.0, period_in_cycles);
-  cosfill(position_array[2], 8000000.0, period_in_cycles);
+  sinfill(position_array[1], 6400000.0, period_in_cycles);//6400000=100000counts/s
+  sinfill(position_array[2],  800000.0, period_in_cycles);// 800000=12500counts/s
 
   // Other graphs can be used to fill these position arrays
   // The two arrays have to be equal in size 
