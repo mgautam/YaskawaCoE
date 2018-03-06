@@ -1,4 +1,4 @@
-//#include <stdio.h>
+#include <stdio.h>
 #include <math.h>
 #include <ycoe_math.h>
 #define PI 3.14159265
@@ -12,8 +12,9 @@ int sinfill(DINT *array, double radius, unsigned int num_samples) {
     int i;
     for (i=0; i<num_samples; i++) {
       array[i] = (DINT) (radius * sin(omega * (double)i));
-      //printf("%d->%d ",i,array[i]);
+      if (i < 15) printf("%d->%d ",i,array[i]);
     }
+    printf("Sinfill: %d\n",num_samples);
     return 0;
 }
 

@@ -243,7 +243,7 @@ int ycoe_csp_setup_posarray(int num_slaves, unsigned int samples_per_second, uns
 
   // Circular Interpolation
   sinfill(position_array[1], 6400000.0, period_in_cycles);//6400000=100000counts/s
-  sinfill(position_array[2],  800000.0, period_in_cycles);// 800000=12500counts/s
+  sinfill(position_array[2], 6400000.0, period_in_cycles);// 800000=12500counts/s
 
   // Other graphs can be used to fill these position arrays
   // The two arrays have to be equal in size 
@@ -258,15 +258,20 @@ int ycoe_csp_follow_posarray (int slavenum) {
     DINT tolerance = 10;//counts
 
     // Sync both axes with the position array
-    if ((((*current_position_pdo1 - position_array[1][position_index]) < tolerance) || ((*current_position_pdo1 - position_array[1][position_index]) > -tolerance)) &&
-        (((*current_position_pdo2 - position_array[2][position_index]) < tolerance) || ((*current_position_pdo2 - position_array[2][position_index]) > -tolerance)))
+    /*if (((((*current_position_pdo1 - position_array[1][position_index]) < tolerance) && (*current_position_pdo1 > position_array[1][position_index])) ||
+         (((*current_position_pdo1 - position_array[1][position_index]) > -tolerance) && (*current_position_pdo1 < position_array[1][position_index]))) &&
+        ((((*current_position_pdo2 - position_array[2][position_index]) < tolerance) && (*current_position_pdo2 > position_array[2][position_index])) ||
+         (((*current_position_pdo2 - position_array[2][position_index]) > -tolerance) && (*current_position_pdo2 < position_array[2][position_index]))))*/
     {
       position_index++;
       if (position_index >= period_in_cycles) position_index = 0;
     }
 
-    DINT *target_position_pdo = (DINT *)(ec_slave[slavenum].outputs+2);
-    *target_position_pdo = position_array[slavenum][position_index];
+    DINT *target_position_pdo1 = (DINT *)(ec_slave[1].outputs+2);
+    *target_position_pdo1 = position_array[1][position_index];
+
+    DINT *target_position_pdo2 = (DINT *)(ec_slave[2].outputs+2);
+    *target_position_pdo2 = position_array[2][position_index];
 
     return 0;
 }

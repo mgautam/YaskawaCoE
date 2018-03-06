@@ -91,8 +91,8 @@ while (1) {
                 ycoe_set_mode_of_operation(islaveindex,CYCLIC_SYNC_POSITION_MODE);
                 ycoe_csp_set_parameters(islaveindex,0,0,1048576,1048576);
                 //ycoe_csp_get_parameters(islaveindex);
-ycoe_csp_setup_posarray(2,500,15);
             }
+ycoe_csp_setup_posarray(2,500,5);
 
             /*
                ec_config_map reads PDO mapping and set local buffer for PDO exchange.
@@ -154,7 +154,7 @@ ycoe_csp_setup_posarray(2,500,15);
                             //ycoe_csp_set_position(islaveindex, 1500000000);
                             pos_cmd_sem[islaveindex] = 1;
                         }
-                        else {
+                        /*else {
 //                          if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
                           if (ycoe_checkstatus(1,SW_OP_ENABLED) \
                               && ycoe_checkstatus(2,SW_OP_ENABLED))
@@ -164,15 +164,25 @@ ycoe_csp_setup_posarray(2,500,15);
                               //printf("cycle %d: pos_cmd_sem[islaveindex]>0\n\r",i);
                               //printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
                               //if (ycoe_csp_goto_position(islaveindex,final_position)) {
-                              /*if (ycoe_csp_goto_possync(islaveindex)) {
+                              if (ycoe_csp_goto_possync(islaveindex)) {
                                 pos_cmd_sem[islaveindex]--;
-                              }*/
-                               ycoe_csp_follow_posarray(islaveindex);
+                              }
+                              //ycoe_csp_follow_posarray(islaveindex);
                             }
 
                           }
-                        }
+                        }*/
                     }
+
+                        if (ycoe_checkstatus(1,SW_OP_ENABLED) \
+                              && ycoe_checkstatus(2,SW_OP_ENABLED))
+                          {
+                             if (pos_cmd_sem[islaveindex] > 0) {
+                              // Add interpolation calculations
+                              ycoe_csp_follow_posarray(islaveindex);
+                            }
+                          }
+
 
                     ec_send_processdata();
                     wkc = ec_receive_processdata(EC_TIMEOUTRET);
