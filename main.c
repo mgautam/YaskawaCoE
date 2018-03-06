@@ -68,10 +68,11 @@ printf("a(ec_config_init) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x13
             for (islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
                 /* Check & Set Interpolation Mode Parameters */
                 //ycoe_ipm_get_parameters(islaveindex);
+                printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",islaveindex,0x1602,2,ycoe_readCOparam(islaveindex, 0x1602, 2));
                 ycoe_ipm_setup(islaveindex);
-                printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",islaveindex,0x1601,2,ycoe_readCOparam(islaveindex, 0x1601, 2));
+                printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",islaveindex,0x1602,2,ycoe_readCOparam(islaveindex, 0x1602, 2));
                 ycoe_set_mode_of_operation(islaveindex,INTERPOLATED_POSITION_MODE);
-                printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",islaveindex,0x1601,2,ycoe_readCOparam(islaveindex, 0x1601, 2));
+                printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",islaveindex,0x1602,2,ycoe_readCOparam(islaveindex, 0x1602, 2));
                 ycoe_ipm_set_parameters(islaveindex,1048576,1048576);
                 //ycoe_ipm_get_parameters(islaveindex);
             }
