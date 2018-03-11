@@ -65,7 +65,7 @@ void coeController(char *ifname)
                 //ycoe_ppm_get_parameters(islaveindex);
                 ycoe_ppm_setup(islaveindex);
                 ycoe_set_mode_of_operation(islaveindex,PROFILE_POSITION_MODE);
-                ycoe_ppm_set_parameters(islaveindex,54700000,1024,1048576,1048576);//10485760
+                ycoe_ppm_set_parameters(islaveindex,54700000,912,2735,1048576);//velocity(0to54700000)in(1sec)=>acceleration=2735
                 ycoe_ppm_get_parameters(islaveindex);
             }
 
@@ -300,7 +300,7 @@ OSAL_THREAD_FUNC ecatcheck( void *ptr )
 
 /* Server for talking to GUI Application */
 OSAL_THREAD_FUNC controlserver(void *ptr) {
-  int position_request = 300000000;
+  int position_request = 450000000;
 
 	while (1) {
     osal_usleep(900000);
@@ -312,7 +312,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
     if (ycoe_ppm_checkstatus(1, SW_PPM_TARGET_REACHED) &&
         ycoe_ppm_checkstatus(2, SW_PPM_TARGET_REACHED)) {
         if (position_request > 0) position_request = 0;
-        else position_request = 300000000;
+        else position_request = 450000000;
         ycoe_ppm_set_position(1, position_request);
         ycoe_ppm_set_position(2, position_request);
         pos_cmd_sem[1]++;
