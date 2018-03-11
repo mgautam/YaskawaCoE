@@ -11,8 +11,6 @@
 #include <string.h>
 #include <inttypes.h>
 
-//#include "zmq.h"
-
 #include "ethercat.h"
 #include "yaskawacoe.h"
 
@@ -33,7 +31,6 @@ int guiIObytes = 0;
 int graphIndex = 44; //4+(4+4+6+6)*2
 int pos_cmd_sem[3] = {0,0,0}; // Position Command Semaphore
 DINT final_position = 0;
-//char  oloop, iloop;
 char IOmap[4096];
 int expectedWKC;
 volatile int wkc;
@@ -79,7 +76,7 @@ void coeController(char *ifname)
                 ycoe_csp_set_parameters(islaveindex,0,0,1048576,1048576);
                 //ycoe_csp_get_parameters(islaveindex);
             }
-
+ycoe_csp_setup_posarray(2,500,5);
 
             /*
                ec_config_map reads PDO mapping and set local buffer for PDO exchange.
@@ -139,35 +136,34 @@ void coeController(char *ifname)
                         {
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
                             final_position = 1500000000;//81920;
+                            //ycoe_csp_set_position(islaveindex, 1500000000);
                             pos_cmd_sem[islaveindex] = 1;
-                            //ycoe_csp_set_position (1,181920);
                         }
-                        else {
+                        /*else {
 //                          if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
                           if (ycoe_checkstatus(1,SW_OP_ENABLED) \
                               && ycoe_checkstatus(2,SW_OP_ENABLED))
                           {
-/*                            if (pos_cmd_sem[islaveindex] > 0) {
-                              ycoe_csp_set_position(islaveindex, final_position);
-                              pos_cmd_sem[islaveindex]--;
-                            }
-*/
-                            if (pos_cmd_sem[islaveindex] > 0) {
+                             if (pos_cmd_sem[islaveindex] > 0) {
                               // Add interpolation calculations
-                              //printf("cycle %d: pos_cmd_sem[islaveindex]>0\n\r",i);
-//          					          printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
-/*                              if (ycoe_csp_goto_position(islaveindex,final_position)) {
-                                pos_cmd_sem[islaveindex]--;
-                              }
-*/
-                              if (ycoe_csp_goto_possync(islaveindex,final_position)) {
+                              //if (ycoe_csp_goto_position(islaveindex,final_position)) {
+                              if (ycoe_csp_goto_possync(islaveindex)) {
                                 pos_cmd_sem[islaveindex]=0;
                               }
+                              //ycoe_csp_follow_posarray(islaveindex);
                             }
 
                           }
-                        }
+                        }*/
                     }
+
+                        if (ycoe_checkstatus(1,SW_OP_ENABLED) \
+                              && ycoe_checkstatus(2,SW_OP_ENABLED))
+                          {
+                              // Add interpolation calculations
+                              ycoe_csp_follow_posarray(islaveindex);
+                          }
+
 
                     ec_send_processdata();
                     wkc = ec_receive_processdata(EC_TIMEOUTRET);
@@ -346,7 +342,6 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 /* user buttons - semi-automatic motion sequence */
   char buffer[15];
 	FILE * filepointer = fopen("/dev/ycoe", "r");
-
 	while (1) {
     fread(buffer, sizeof(char) , 4, filepointer);
 
@@ -410,14 +405,14 @@ int main(int argc, char *argv[])
   {
     /* create thread to handle slave error handling in OP */
     //      pthread_create( &thread1, NULL, (void *) &ecatcheck, (void*) &ctime);
-    osal_thread_create(&thread1, 128000, &ecatcheck, (void*) &ctime);
+    //osal_thread_create(&thread1, 128000, &ecatcheck, (void*) &ctime);
     // thread to handle gui application requests
     //osal_thread_create(&thread2, 128000, &controlserver, (void*)&ctime);
     /* start cyclic part */
     osal_thread_create_rt(&thread2, 128000, &coeController, argv[1]);
     //coeController(argv[1]);
-
-    controlserver(argv[1]);
+    //controlserver(argv[1]);
+    ecatcheck((void *) &ctime);
   }
   else
   {
