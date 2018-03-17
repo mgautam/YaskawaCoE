@@ -23,6 +23,8 @@ int ycoe_ipm_setup(int slavenum) {
     ec_SDOwrite(slavenum,0x1C13,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
 
     /* Control Word mapping entry for RxPDO */
+    usintbuff=0;
+    ec_SDOwrite(slavenum,0x1602,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
     udintbuff=0x60400010;
     ec_SDOwrite(slavenum,0x1602,1,0,UDINT_SIZE,&udintbuff,EC_TIMEOUTRXM);
     /* Set Interpolation data for target position in RxPDO */
@@ -33,6 +35,8 @@ int ycoe_ipm_setup(int slavenum) {
     ec_SDOwrite(slavenum,0x1602,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
 
     /* Status Word mapping entry for TxPDO */
+    usintbuff=0;
+    ec_SDOwrite(slavenum,0x1A02,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
     udintbuff=0x60410010;
     ec_SDOwrite(slavenum,0x1A02,1,0,UDINT_SIZE,&udintbuff,EC_TIMEOUTRXM);
     /* Set current position in TxPDO */
@@ -54,7 +58,7 @@ int ycoe_ipm_setup(int slavenum) {
     ec_SDOwrite(slavenum,0x1C13,0,0,USINT_SIZE,&usintbuff,EC_TIMEOUTRXM);
 
     /* Enable DC Mode with Sync0 Generation */
-    ec_dcsync0(slavenum,1,4000000,0);//CycleTime=4ms, CycleShift=0
+    //ec_dcsync0(slavenum,1,4000000,0);//CycleTime=4ms, CycleShift=0
     printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
     return 0;
 }
@@ -72,7 +76,7 @@ int ycoe_ipm_checkcontrol (int slavenum, UINT targetcontrol) {
   return retval;
 }
 int ycoe_ipm_checkstatus (int slavenum, UINT targetstatus) {
-  UINT *statusword = (UINT *)(ec_slave[slavenum].inputs+2);
+  UINT *statusword = (UINT *)(ec_slave[slavenum].inputs);
   int retval = 0;
 
   if (targetstatus & *statusword) retval++;
