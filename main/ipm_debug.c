@@ -33,16 +33,14 @@ int pos_cmd_sem[3] = {0,0,0}; // Position Command Semaphore
 DINT final_position = 0;
 //char  oloop, iloop;
 char IOmap[4096];
-int expectedWKC;
 
+extern int expectedWKC;
 extern volatile int wkc;
-extern boolean inOP;
 extern uint8 currentgroup;
 
 void coeController(char *ifname)
 {
     int i,/* j,*/ chk;
-    inOP = FALSE;
     int islaveindex;
 
     printf("Starting YaskawaCoE master\n");
@@ -123,7 +121,6 @@ printf("a(wait_op) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
             if (ec_slave[0].state == EC_STATE_OPERATIONAL )
             {
                 printf("Operational state reached for all slaves.\n");
-                inOP = TRUE;
 
                 /* cyclic loop */
 				        i = 0;
@@ -213,7 +210,6 @@ printf("a(wait_op) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
                    osal_usleep(500);
 
                 }
-                inOP = FALSE;
             }
             else
             {
