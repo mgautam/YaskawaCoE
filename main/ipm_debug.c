@@ -14,13 +14,12 @@
 #include "zmq.h"
 
 #include "ethercat.h"
+#include "ecatcheck.h"
 #include "yaskawacoe.h"
 
 #ifndef _WIN32
 #include <pthread.h>
 #endif
-
-#define EC_TIMEOUTMON 500
 
 #ifdef _WIN32
 HANDLE IOmutex;
@@ -35,13 +34,14 @@ DINT final_position = 0;
 //char  oloop, iloop;
 char IOmap[4096];
 int expectedWKC;
-volatile int wkc;
-boolean inOP;
-uint8 currentgroup = 0;
+
+extern volatile int wkc;
+extern boolean inOP;
+extern uint8 currentgroup;
 
 void coeController(char *ifname)
 {
-    int i, j, chk;
+    int i,/* j,*/ chk;
     inOP = FALSE;
     int islaveindex;
 
@@ -174,7 +174,6 @@ printf("a(wait_op) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
                           }
                         }
                     }
-
                     ec_send_processdata();
                     wkc = ec_receive_processdata(EC_TIMEOUTRET);
 
@@ -248,81 +247,9 @@ printf("a(wait_op) Slave:%d CoE State: %x\n\r",1,ycoe_readreg_int(1, 0x130));
     }
 }
 
-OSAL_THREAD_FUNC ecatcheck( void *ptr )
-{
-  int slave;
-  (void)ptr;                  /* Not used */
-
-  while(1)
-  {
-    if( inOP && ((wkc < expectedWKC) || ec_group[currentgroup].docheckstate))
-    {
-      /* one ore more slaves are not responding */
-      ec_group[currentgroup].docheckstate = FALSE;
-      ec_readstate();
-      for (slave = 1; slave <= ec_slavecount; slave++)
-      {
-        if ((ec_slave[slave].group == currentgroup) && (ec_slave[slave].state != EC_STATE_OPERATIONAL))
-        {
-          ec_group[currentgroup].docheckstate = TRUE;
-          if (ec_slave[slave].state == (EC_STATE_SAFE_OP + EC_STATE_ERROR))
-          {
-            printf("ERROR : slave %d is in SAFE_OP + ERROR, attempting ack.\n", slave);
-            ec_slave[slave].state = (EC_STATE_SAFE_OP + EC_STATE_ACK);
-            ec_writestate(slave);
-          }
-          else if(ec_slave[slave].state == EC_STATE_SAFE_OP)
-          {
-            printf("WARNING : slave %d is in SAFE_OP, change to OPERATIONAL.\n", slave);
-            ec_slave[slave].state = EC_STATE_OPERATIONAL;
-            ec_writestate(slave);
-          }
-          else if(ec_slave[slave].state > EC_STATE_NONE)
-          {
-            if (ec_reconfig_slave(slave, EC_TIMEOUTMON))
-            {
-              ec_slave[slave].islost = FALSE;
-              printf("MESSAGE : slave %d reconfigured\n",slave);
-            }
-          }
-          else if(!ec_slave[slave].islost)
-          {
-            /* re-check state */
-            ec_statecheck(slave, EC_STATE_OPERATIONAL, EC_TIMEOUTRET);
-            if (ec_slave[slave].state == EC_STATE_NONE)
-            {
-              ec_slave[slave].islost = TRUE;
-              printf("ERROR : slave %d lost\n",slave);
-            }
-          }
-        }
-        if (ec_slave[slave].islost)
-        {
-          if(ec_slave[slave].state == EC_STATE_NONE)
-          {
-            if (ec_recover_slave(slave, EC_TIMEOUTMON))
-            {
-              ec_slave[slave].islost = FALSE;
-              printf("MESSAGE : slave %d recovered\n",slave);
-            }
-          }
-          else
-          {
-            ec_slave[slave].islost = FALSE;
-            printf("MESSAGE : slave %d found\n",slave);
-          }
-        }
-      }
-      if(!ec_group[currentgroup].docheckstate)
-        printf("OK : all slaves resumed OPERATIONAL.\n");
-    }
-    osal_usleep(10000);
-  }
-}
-
 /* Server for talking to GUI Application */
 OSAL_THREAD_FUNC controlserver(void *ptr) {
-	//  Socket to talk to clients
+  //  Socket to talk to clients
 	void *context = zmq_ctx_new();
 	void *responder = zmq_socket(context, ZMQ_REP);
 	int rc = zmq_bind(responder, "tcp://*:5555");
@@ -358,6 +285,16 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       INT *index = (INT *)(buffer + 1+1);
       INT *subindex = (INT *)(buffer + 1+1+4);
       printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",*slaveaddr,*index,*subindex,ycoe_readCOparam(*slaveaddr, *index, *subindex));
+    }
+    else if (buffer[0] == 33) {
+      USINT slaveaddr;
+      DINT *targetposition = (DINT *)(buffer + 1);
+      final_position = *targetposition;
+      for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
+        //ycoe_ipm_set_position(*slaveaddr, *targetposition);//Vulnerable to racing conditions
+        pos_cmd_sem[slaveaddr]++;
+        printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
+      }
     }
 
     zmq_send(responder, guiIOmap, guiIObytes, 0);

@@ -24,7 +24,7 @@ enum {
   SW_PPM_FOLLOW_ERR  = 0x2000
 } sw_ppm_bits1013;
 
-int ycoe_ppm_setup(int slavenum); 
+int ycoe_ppm_setup(int slavenum);
 int ycoe_ppm_checkcontrol (int slavenum, UINT targetcontrol);
 int ycoe_ppm_checkstatus(int slavenum, UINT targetstatus);
 
