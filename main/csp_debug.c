@@ -14,13 +14,19 @@
 #include "zmq.h"
 
 #include "ethercat.h"
+#include "ecatcheck.h"
 #include "yaskawacoe.h"
 
 #ifndef _WIN32
 #include <pthread.h>
 #endif
 
-#define EC_TIMEOUTMON 500
+//extern DINT **position_array;
+//extern unsigned int period_in_cycles;
+extern int expectedWKC;
+extern volatile int wkc;
+extern uint8 currentgroup;
+
 
 #ifdef _WIN32
 HANDLE IOmutex;
@@ -30,26 +36,35 @@ pthread_mutex_t IOmutex;
 
 char guiIOmap[4096];
 int guiIObytes = 0;
+int graphIndex = 44; //4+(4+4+6+6)*2
 int pos_cmd_sem[3] = {0,0,0}; // Position Command Semaphore
-DINT final_position = 0;
-//char  oloop, iloop;
 char IOmap[4096];
-int expectedWKC;
-volatile int wkc;
-boolean inOP;
-uint8 currentgroup = 0;
 
 void coeController(char *ifname)
 {
     int i, chk;
-    inOP = FALSE;
     int islaveindex;
+    DINT curr_position, prev_position = 0;
+    DINT slave_velocity = 0;
 
     ec_timet current_time, previous_time, diff_time;
     unsigned int act_cycle_time, min_cycle_time = 999999, max_cycle_time = 0, avg_cycle_time = 0, sum_cycle_time = 0;
 
     FILE *posfile = fopen("slave_positions.csv","w");
     fprintf(posfile, "Cycle, CycleTime, Slave1 Target Position, Actual Position, Slave2 Target Position,Actual Position,\n");
+
+/*
+ycoe_csp_setup_posarray(2, 500, 1);
+int position_index = 0;
+while (1) {
+  if(++position_index >= period_in_cycles) position_index = 0;
+  if(++graphIndex >= 500) graphIndex = 0;
+  memcpy(guiIOmap+44, &graphIndex, 4);//Copy current graph index position from 44th location
+  memcpy(guiIOmap+50+(graphIndex<<2), position_array[1]+position_index, 4);//Copy 1st slave current position from 50th location
+  memcpy(guiIOmap+2050+(graphIndex<<2), position_array[2]+position_index, 4);//Copy 2nd slave current position from 50+500*4th location
+  osal_usleep(2000);
+}
+*/
 
     /* initialise SOEM, bind socket to ifname */
     if (ec_init(ifname))
@@ -75,7 +90,7 @@ void coeController(char *ifname)
                 ycoe_csp_set_parameters(islaveindex,0,0,1048576,1048576);
                 //ycoe_csp_get_parameters(islaveindex);
             }
-
+ycoe_csp_setup_posarray(2,500,5);
 
             /*
                ec_config_map reads PDO mapping and set local buffer for PDO exchange.
@@ -87,8 +102,6 @@ void coeController(char *ifname)
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
             /* slave0 is the master. All slaves pdos are mapped to slave0 */
-            //oloop = ec_slave[0].Obytes; /* Obytes are the total number of output bytes consolidated from all slaves */
-            //iloop = ec_slave[0].Ibytes; /* Ibytes are the total number of input bytes consolidated from all slaves */
 
             printf("Request operational state for all slaves\n");
             expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
@@ -111,7 +124,6 @@ void coeController(char *ifname)
             if (ec_slave[0].state == EC_STATE_OPERATIONAL )
             {
                 printf("Operational state reached for all slaves.\n");
-                inOP = TRUE;
 
                 previous_time = osal_current_time();
 
@@ -136,35 +148,38 @@ void coeController(char *ifname)
                         else if(ycoe_checkstatus(islaveindex,SW_SWITCHED_ON))
                         {
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
-                            final_position = 1500000000;//181920;
+                            //ycoe_csp_set_position(islaveindex, 1500000000);
                             pos_cmd_sem[islaveindex] = 1;
-                            //ycoe_csp_set_position (1,8192);
                         }
-                        else {
-                          if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
+                        /*else {
+//                          if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
+                          if (ycoe_checkstatus(1,SW_OP_ENABLED) \
+                              && ycoe_checkstatus(2,SW_OP_ENABLED))
                           {
-/*                            if (pos_cmd_sem[islaveindex] > 0) {
-                              ycoe_csp_set_position(islaveindex, final_position);
-                              pos_cmd_sem[islaveindex]--;
-                            }
-*/
-                            if (pos_cmd_sem[islaveindex] > 0) {
+                             if (pos_cmd_sem[islaveindex] > 0) {
                               // Add interpolation calculations
                               //printf("cycle %d: pos_cmd_sem[islaveindex]>0\n\r",i);
-//          					          printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
-/*                              if (ycoe_csp_goto_position(islaveindex,final_position)) {
+                              //printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
+                              //if (ycoe_csp_goto_position(islaveindex,final_position)) {
+                              if (ycoe_csp_goto_possync(islaveindex)) {
                                 pos_cmd_sem[islaveindex]--;
                               }
-*/
-                              if (ycoe_csp_goto_possync(islaveindex,final_position)) {
-                                pos_cmd_sem[islaveindex]--;
-                              }
-          					         // printf("PDO cycle %4d, T:%"PRId64"\n\r", i, ec_DCtime);
+                              //ycoe_csp_follow_posarray(islaveindex);
                             }
 
                           }
-                        }
+                        }*/
                     }
+
+                        if (ycoe_checkstatus(1,SW_OP_ENABLED) \
+                              && ycoe_checkstatus(2,SW_OP_ENABLED))
+                          {
+                             if (pos_cmd_sem[islaveindex] > 0) {
+                              // Add interpolation calculations
+                              ycoe_csp_follow_posarray(islaveindex);
+                            }
+                          }
+
 
                     ec_send_processdata();
                     wkc = ec_receive_processdata(EC_TIMEOUTRET);
@@ -185,18 +200,17 @@ void coeController(char *ifname)
                           usedbytes += ec_slave[islaveindex].Obytes;
                       }
                       guiIObytes = usedbytes;
-/*
-          					  printf("PDO cycle %4d, WKC %d , T:%"PRId64"\n", i, wkc, ec_DCtime);
 
-                      printf(" O:");
-                      for(j = 0 ; j < oloop; j++)
-                        printf(" %2.2x", *(ec_slave[0].outputs + j));
-
-                      printf("\tI:");
-                      for(j = 0 ; j < iloop; j++)
-                        printf(" %2.2x", *(ec_slave[0].inputs + j));
-                      printf("\n");
-*/                   }
+                      curr_position = *(DINT*)(ec_slave[1].inputs+2);
+                      slave_velocity = curr_position - prev_position;
+                      if (slave_velocity != 0) {
+                        if(++graphIndex >= 500) graphIndex = 0;
+                        memcpy(guiIOmap+44, &graphIndex, 4);//Copy current graph index position from 44th location
+                        memcpy(guiIOmap+50+(graphIndex<<2), ec_slave[1].inputs+2, 4);//Copy 1st slave current position from 50th location
+                        memcpy(guiIOmap+2050+(graphIndex<<2), ec_slave[2].inputs+2, 4);//Copy 2nd slave current position from 50+500*4th location
+                      }
+                      prev_position = curr_position;
+                  }
 #ifdef _WIN32
 					          	ReleaseMutex(IOmutex);
 #else
@@ -217,7 +231,6 @@ void coeController(char *ifname)
 
                    fprintf(posfile,"%d,%d,%d,%d,%d,%d,\n",i,act_cycle_time,*(UDINT *)(ec_slave[1].outputs+2),*(UDINT *)(ec_slave[1].inputs+2),*(UDINT *)(ec_slave[2].outputs+2),*(UDINT *)(ec_slave[2].inputs+2));
                 }
-                inOP = FALSE;
             }
             else
             {
@@ -251,78 +264,6 @@ void coeController(char *ifname)
     }
 }
 
-OSAL_THREAD_FUNC ecatcheck( void *ptr )
-{
-  int slave;
-  (void)ptr;                  /* Not used */
-
-  while(1)
-  {
-    if( inOP && ((wkc < expectedWKC) || ec_group[currentgroup].docheckstate))
-    {
-      /* one ore more slaves are not responding */
-      ec_group[currentgroup].docheckstate = FALSE;
-      ec_readstate();
-      for (slave = 1; slave <= ec_slavecount; slave++)
-      {
-        if ((ec_slave[slave].group == currentgroup) && (ec_slave[slave].state != EC_STATE_OPERATIONAL))
-        {
-          ec_group[currentgroup].docheckstate = TRUE;
-          if (ec_slave[slave].state == (EC_STATE_SAFE_OP + EC_STATE_ERROR))
-          {
-            printf("ERROR : slave %d is in SAFE_OP + ERROR, attempting ack.\n", slave);
-            ec_slave[slave].state = (EC_STATE_SAFE_OP + EC_STATE_ACK);
-            ec_writestate(slave);
-          }
-          else if(ec_slave[slave].state == EC_STATE_SAFE_OP)
-          {
-            printf("WARNING : slave %d is in SAFE_OP, change to OPERATIONAL.\n", slave);
-            ec_slave[slave].state = EC_STATE_OPERATIONAL;
-            ec_writestate(slave);
-          }
-          else if(ec_slave[slave].state > EC_STATE_NONE)
-          {
-            if (ec_reconfig_slave(slave, EC_TIMEOUTMON))
-            {
-              ec_slave[slave].islost = FALSE;
-              printf("MESSAGE : slave %d reconfigured\n",slave);
-            }
-          }
-          else if(!ec_slave[slave].islost)
-          {
-            /* re-check state */
-            ec_statecheck(slave, EC_STATE_OPERATIONAL, EC_TIMEOUTRET);
-            if (ec_slave[slave].state == EC_STATE_NONE)
-            {
-              ec_slave[slave].islost = TRUE;
-              printf("ERROR : slave %d lost\n",slave);
-            }
-          }
-        }
-        if (ec_slave[slave].islost)
-        {
-          if(ec_slave[slave].state == EC_STATE_NONE)
-          {
-            if (ec_recover_slave(slave, EC_TIMEOUTMON))
-            {
-              ec_slave[slave].islost = FALSE;
-              printf("MESSAGE : slave %d recovered\n",slave);
-            }
-          }
-          else
-          {
-            ec_slave[slave].islost = FALSE;
-            printf("MESSAGE : slave %d found\n",slave);
-          }
-        }
-      }
-      if(!ec_group[currentgroup].docheckstate)
-        printf("OK : all slaves resumed OPERATIONAL.\n");
-    }
-    osal_usleep(10000);
-  }
-}
-
 /* Server for talking to GUI Application */
 OSAL_THREAD_FUNC controlserver(void *ptr) {
 	//  Socket to talk to clients
@@ -330,6 +271,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 	void *responder = zmq_socket(context, ZMQ_REP);
 	int rc = zmq_bind(responder, "tcp://*:5555");
 	char buffer[15];
+  //int graphCue = 0;
 
 	while (1) {
     zmq_recv(responder, buffer, 15, 0);
@@ -343,24 +285,59 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       USINT *slaveaddr = (USINT *)(buffer + 1);
       DINT *targetposition = (DINT *)(buffer + 1+1);
       if (*slaveaddr <= ec_slavecount) {
-        //ycoe_csp_set_position(*slaveaddr, *targetposition);//Vulnerable to racing conditions
-        final_position = *targetposition;
+        ycoe_csp_set_position(*slaveaddr, *targetposition);
         pos_cmd_sem[*slaveaddr]++;
-        //printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
+        printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
+      } else {
+        printf("Invalid slave address:%x Requested position:%d and pos_cmd_sem=%d\n\r",*slaveaddr,*targetposition,pos_cmd_sem[*slaveaddr]);
       }
+    }
+    else if (buffer[0] == 6) {
+      USINT *slaveaddr = (USINT *)(buffer + 1);
+      INT *regaddr = (INT *)(buffer + 1+1);
+      printf("Slave %x Register %x Content = %x\n\r",*slaveaddr,*regaddr,ycoe_readreg_dint(*slaveaddr, *regaddr));
+    }
+    else if (buffer[0] == 9) {
+      USINT *slaveaddr = (USINT *)(buffer + 1);
+      INT *index = (INT *)(buffer + 1+1);
+      INT *subindex = (INT *)(buffer + 1+1+4);
+      printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",*slaveaddr,*index,*subindex,ycoe_readCOparam(*slaveaddr, *index, *subindex));
     }
     else if (buffer[0] == 33) {
       // Multi axis Command
       USINT slaveaddr;
       DINT *targetposition = (DINT *)(buffer + 1);
-      final_position = *targetposition;
       for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
+        ycoe_csp_set_position(slaveaddr, *targetposition);
         pos_cmd_sem[slaveaddr]++;
-        //printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
+        printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
       }
     }
-
-    zmq_send(responder, guiIOmap, guiIObytes, 0);
+/*
+    if (graphCue) {
+      for (int i=0; i<2000;i+=4) {
+        guiIOmap[50+i]=(i<<5);
+        guiIOmap[50+i+1]=(i<<5)>>8;
+        guiIOmap[50+i+2]=(i<<5)>>16;
+        guiIOmap[2050+i]=(32000+(i<<5));
+        guiIOmap[2050+i+1]=(32000+(i<<5))>>8;
+        guiIOmap[2050+i+2]=(32000+(i<<5))>>16;
+      }
+      graphCue = 0;
+    } else {
+      for (int i=0; i<2000;i+=4) {
+        guiIOmap[50+i]=((2000-i)<<5);
+        guiIOmap[50+i+1]=((2000-i)<<5)>>8;
+        guiIOmap[50+i+2]=((2000-i)<<5)>>16;
+        guiIOmap[2050+i]=(32000+(2000-i)<<5);
+        guiIOmap[2050+i+1]=(32000+((2000-i)<<5))>>8;
+        guiIOmap[2050+i+2]=(32000+((2000-i)<<5))>>16;
+      }
+      graphCue = 1;
+    }
+*/
+    //zmq_send(responder, guiIOmap, guiIObytes, 0);
+    zmq_send(responder, guiIOmap, 4050, 0);//graph values
 #ifdef _WIN32
     ReleaseMutex(IOmutex);
 #else
