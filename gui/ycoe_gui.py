@@ -93,6 +93,7 @@ class controlWindow(FloatLayout):
             idata = data[frloc+8:frloc+8+inputbytes]
             odata = data[frloc+8+inputbytes:frloc+8+inputbytes+outputbytes]
 
+            self.errorcode1.text=str(hex(int.from_bytes(data[46:48],byteorder='little')))
             self.tarpos1.text=str(int.from_bytes(odata[2:6],byteorder='little'))
             self.curpos1.text=str(int.from_bytes(idata[2:6],byteorder='little'))
             self.statusword1.text=''.join('{:02x}'.format(x) for x in reversed(idata[0:2]))
@@ -105,6 +106,7 @@ class controlWindow(FloatLayout):
             idata = data[frloc+8:frloc+8+inputbytes]
             odata = data[frloc+8+inputbytes:frloc+8+inputbytes+outputbytes]
 
+            self.errorcode2.text=str(hex(int.from_bytes(data[48:50],byteorder='little')))
             self.tarpos2.text=str(int.from_bytes(odata[2:6],byteorder='little'))
             self.curpos2.text=str(int.from_bytes(idata[2:6],byteorder='little'))
             self.statusword2.text=''.join('{:02x}'.format(x) for x in reversed(idata[0:2]))

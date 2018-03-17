@@ -204,7 +204,7 @@ ycoe_csp_setup_posarray(2,500,5);
                       slave_velocity = curr_position - prev_position;
                       if (slave_velocity != 0) {
                         if(++graphIndex >= 500) graphIndex = 0;
-                        memcpy(guiIOmap+44, &graphIndex, 4);//Copy current graph index position from 44th location
+                        memcpy(guiIOmap+44, &graphIndex, 2);//Copy current graph index position from 44th location
                         memcpy(guiIOmap+50+(graphIndex<<2), ec_slave[1].inputs+2, 4);//Copy 1st slave current position from 50th location
                         memcpy(guiIOmap+2050+(graphIndex<<2), ec_slave[2].inputs+2, 4);//Copy 2nd slave current position from 50+500*4th location
                       }
@@ -271,9 +271,12 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 	int rc = zmq_bind(responder, "tcp://*:5555");
 	char buffer[15];
   //int graphCue = 0;
+  UINT *errorcode = (UINT *) (guiIOmap+46);
 
 	while (1) {
     zmq_recv(responder, buffer, 15, 0);
+    errorcode[0] = ycoe_readCOparam_int(1, 0x603F, 0);
+    errorcode[1] = ycoe_readCOparam_int(2, 0x603F, 0);
 
 #ifdef _WIN32
     WaitForSingleObject(IOmutex, INFINITE);
@@ -335,7 +338,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       graphCue = 1;
     }
 */
-    //zmq_send(responder, guiIOmap, guiIObytes, 0);
+   //zmq_send(responder, guiIOmap, guiIObytes, 0);
     zmq_send(responder, guiIOmap, 4050, 0);//graph values
 #ifdef _WIN32
     ReleaseMutex(IOmutex);

@@ -9,11 +9,13 @@
     cmdlbl:cmd_lbl
     statuslbl:status_lbl
 
+    errorcode1:_errorcode1
     tarpos1:_tarpos1
     curpos1:_curpos1
     statusword1:_status1
     controlword1:_control1
 
+    errorcode2:_errorcode2
     tarpos2:_tarpos2
     curpos2:_curpos2
     statusword2:_status2
@@ -31,10 +33,14 @@
             text: "Slave 1"
         GridLayout:
             cols:2
-            rows:4
+            rows:5
             size_hint:None,None
             size:300,200
             pos:30,300
+            StsLabel:
+                text:"Error Code:"
+            StsLabel:
+                id:_errorcode1
             StsLabel:
                 text:"Target Position"
             StsLabel:
@@ -79,10 +85,14 @@
             text: "Slave 2"
         GridLayout:
             cols:2
-            rows:4
+            rows:5
             size_hint:None,None
             size:300,200
             pos:360,300
+            StsLabel:
+                text:"Error Code:"
+            StsLabel:
+                id:_errorcode2
             StsLabel:
                 text:"Target Position"
             StsLabel:
@@ -116,7 +126,6 @@
                 on_press:self.move_cmdpos(2,self.cmdpos2.text)
             TextInput:
                 id:_cmdpos2
-
 
 
         GridLayout:
