@@ -27,7 +27,6 @@ extern int expectedWKC;
 extern volatile int wkc;
 extern uint8 currentgroup;
 
-
 #ifdef _WIN32
 HANDLE IOmutex;
 #else

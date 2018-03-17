@@ -5,6 +5,7 @@ mkdir build
 cd build
 cmake ..
 make -j8
+export LD_LIBRARY_PATH=/usr/xenomai/lib:$LD_LIBRARY_PATH
 
 pyenv local 3.5.1
 virtualenv -p python3.5 guivenv
