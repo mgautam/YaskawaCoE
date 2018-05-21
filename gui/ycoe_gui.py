@@ -9,7 +9,27 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.clock import Clock
 
 class AbsMoveBtn(Button):
-    def move_absolute(self, distance):
+   def set_acceleration(self, slavenum, straccel):
+        ctrlwindow=self.parent.parent.parent.parent
+        accel=int(straccel)
+        if accel>4294967295:
+            accel=4294967295
+        elif accel<0:
+            accel=0
+        ctrlwindow.socket.send(struct.pack('<BBI',39,slavenum,accel))
+        message = ctrlwindow.socket.recv()
+
+   def set_velocity(self, slavenum, strvelocity):
+        ctrlwindow=self.parent.parent.parent.parent
+        velocity=int(strvelocity)
+        if velocity>4294967295:
+            velocity=4294967295
+        elif velocity<0:
+            velocity=0
+        ctrlwindow.socket.send(struct.pack('<BBI',36,slavenum,velocity))
+        message = ctrlwindow.socket.recv()
+
+   def move_absolute(self, distance):
         ctrlwindow=self.parent.parent.parent
         #cmdmsg=json.dumps({"type":"absolute","distance":distance})
         #print([distance])

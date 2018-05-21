@@ -227,31 +227,6 @@ void coeController(char *ifname)
 
 /* Server for talking to GUI Application */
 OSAL_THREAD_FUNC controlserver(void *ptr) {
-  int position_request = 1500000000;
-  while (1) {
-      osal_usleep(900000);
-#ifdef _WIN32
-      WaitForSingleObject(IOmutex, INFINITE);
-#else
-      pthread_mutex_lock(&IOmutex);
-#endif
-      if (ycoe_ppm_checkstatus(1, SW_PPM_TARGET_REACHED) &&
-          ycoe_ppm_checkstatus(2, SW_PPM_TARGET_REACHED)) {
-          if (position_request > 0) position_request = 0;
-          else position_request = 300000000;
-          ycoe_ppm_set_position(1, position_request);
-          ycoe_ppm_set_position(2, position_request);
-          pos_cmd_sem[1]++;
-          pos_cmd_sem[2]++;
-      }
-#ifdef _WIN32
-      ReleaseMutex(IOmutex);
-#else
-      pthread_mutex_unlock(&IOmutex);
-#endif
-  }
-
-
   //  Socket to talk to clients
 	void *context = zmq_ctx_new();
 	void *responder = zmq_socket(context, ZMQ_REP);
@@ -297,7 +272,19 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
         printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
       }
     }
-
+    else if (buffer[0] == 36) {
+      USINT *slaveaddr = (USINT *)(buffer + 1);
+      UDINT *profile_velocity = (UDINT *)(buffer + 1+1);
+      ycoe_ppm_set_velocity (*slaveaddr, *profile_velocity);
+      printf("Slave %x Requested Velocity:%d\n\r",*slaveaddr,*profile_velocity);
+    }
+    else if (buffer[0] == 39) {
+      USINT *slaveaddr = (USINT *)(buffer + 1);
+      UDINT *acceleration = (UDINT *)(buffer + 1+1);
+      ycoe_ppm_set_acceleration (*slaveaddr,*acceleration);
+      ycoe_ppm_set_deceleration (*slaveaddr,*acceleration);
+      printf("Slave %x Requested Acceleration:%d\n\r",*slaveaddr,*acceleration);
+    }
     zmq_send(responder, guiIOmap, guiIObytes, 0);
 #ifdef _WIN32
     ReleaseMutex(IOmutex);

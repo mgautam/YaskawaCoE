@@ -231,7 +231,7 @@ int ycoe_csp_goto_possync (int slavenum) {
 static DINT **position_array;
 //extern unsigned int period_in_cycles;
 static unsigned int period_in_cycles = 0;
-static int position_index = 0;
+static unsigned int position_index = 0;
 static DINT start_position[3] = {0};
 int ycoe_csp_setup_posarray(int num_slaves, unsigned int samples_per_second, unsigned int period_in_secs) {
   position_array = malloc((num_slaves+1) * sizeof(DINT *));

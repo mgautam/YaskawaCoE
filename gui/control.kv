@@ -57,17 +57,27 @@
                 text:"ControlWord"
             StsLabel:
                 id:_control1
-        GridLayout:
-            rows:5
+        BoxLayout:
+            orientation:"vertical"
             size_hint:None,None
             size:300,250
             pos:30,10
-            AbsMoveBtn:
-                text:'Goto 0xFFFFFF'
-                on_press:self.move_absolute(b'\x03\x01\xFF\xFF\xFF\x00')
-            AbsMoveBtn:
-                text:'Home ZeroPos'
-                on_press:self.move_absolute(b'\x03\x01\x00\x00\x00\x00')
+            BoxLayout:
+                orientation:"horizontal"
+                AbsMoveBtn:
+                    cmdvel1:_cmdvel1
+                    text:'Set Velocity'
+                    on_press:self.set_velocity(1,self.cmdvel1.text)
+                TextInput:
+                    id:_cmdvel1
+            BoxLayout:
+                orientation:"horizontal"
+                AbsMoveBtn:
+                    cmdacc1:_cmdacc1
+                    text:'Set Acceleration'
+                    on_press:self.set_acceleration(1,self.cmdacc1.text)
+                TextInput:
+                    id:_cmdacc1
             CmdPosBtn:
                 cmdpos1:_cmdpos1
                 text:'Goto'
@@ -109,17 +119,27 @@
                 text:"ControlWord"
             StsLabel:
                 id:_control2
-        GridLayout:
-            rows:4
+        BoxLayout:
+            orientation:"vertical"
             size_hint:None,None
             size:300,200
             pos:360,60
-            AbsMoveBtn:
-                text:'Goto 0xFFFFFF'
-                on_press:self.move_absolute(b'\x03\x02\xFF\xFF\xFF\x00')
-            AbsMoveBtn:
-                text:'Home ZeroPos'
-                on_press:self.move_absolute(b'\x03\x02\x00\x00\x00\x00')
+            BoxLayout:
+                orientation:"horizontal"
+                AbsMoveBtn:
+                    cmdvel2:_cmdvel2
+                    text:'Set Velocity'
+                    on_press:self.set_velocity(2,self.cmdvel2.text)
+                TextInput:
+                    id:_cmdvel2
+            BoxLayout:
+                orientation:"horizontal"
+                AbsMoveBtn:
+                    cmdacc2:_cmdacc2
+                    text:'Set Acceleration'
+                    on_press:self.set_acceleration(2,self.cmdacc2.text)
+                TextInput:
+                    id:_cmdacc2
             CmdPosBtn:
                 cmdpos2:_cmdpos2
                 text:'Goto'

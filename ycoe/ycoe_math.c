@@ -9,7 +9,7 @@ int sinfill(DINT *array, double radius, unsigned int num_samples) {
 
     double omega = 2.0*PI /(double)(num_samples);
 
-    int i;
+    unsigned int i;
     for (i=0; i<num_samples; i++) {
       array[i] = (DINT) (radius * sin(omega * (double)i));
       if (i < 15) printf("%d->%d ",i,array[i]);
@@ -23,7 +23,7 @@ int cosfill(DINT *array, double radius, unsigned int num_samples) {
 
     double omega = 2.0*PI /(double)(num_samples);
 
-    int i;
+    unsigned int i;
     for (i=0; i<num_samples; i++) {
       array[i] = (DINT) (radius * cos(omega * (double)i));
       //printf("%d->%d ",i,array[i]);

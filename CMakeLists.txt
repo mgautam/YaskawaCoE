@@ -67,7 +67,9 @@ foreach (file ${MAIN_FILES})
     ${file})
 
   # link the object file with the soem and libzmq library
-  target_link_libraries(ycoe_${appname} m)
+  if(UNIX)
+    target_link_libraries(ycoe_${appname} m)
+  endif()
   target_link_libraries(ycoe_${appname} soem)
   target_link_libraries(ycoe_${appname} libzmq)
 
