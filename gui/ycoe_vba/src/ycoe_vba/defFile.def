@@ -1,0 +1,17 @@
+LIBRARY "ycoe_vba"
+EXPORTS
+ycoe_vba_version = ycoe_vba_version
+
+ycoe_connect = ycoe_connect
+ycoe_disconnect = ycoe_disconnect
+
+ycoe_speed = ycoe_speed
+ycoe_accel = ycoe_accel
+
+ycoe_abspos = ycoe_abspos
+ycoe_relpos = ycoe_relpos
+
+ycoe_tarpos = ycoe_tarpos
+ycoe_curpos = ycoe_curpos
+
+ycoe_test = ycoe_test

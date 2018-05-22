@@ -258,7 +258,19 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
         printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
       }
     }
-
+    else if (buffer[0] == 36) {
+      USINT *slaveaddr = (USINT *)(buffer + 1);
+      UDINT *profile_velocity = (UDINT *)(buffer + 1+1);
+      ycoe_ppm_set_velocity (*slaveaddr, *profile_velocity);
+      printf("Slave %x Requested Velocity:%d\n\r",*slaveaddr,*profile_velocity);
+    }
+    else if (buffer[0] == 39) {
+      USINT *slaveaddr = (USINT *)(buffer + 1);
+      UDINT *acceleration = (UDINT *)(buffer + 1+1);
+      ycoe_ppm_set_acceleration (*slaveaddr,*acceleration);
+      ycoe_ppm_set_deceleration (*slaveaddr,*acceleration);
+      printf("Slave %x Requested Acceleration:%d\n\r",*slaveaddr,*acceleration);
+    }
     zmq_send(responder, guiIOmap, guiIObytes, 0);
 #ifdef _WIN32
     ReleaseMutex(IOmutex);
