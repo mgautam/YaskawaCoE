@@ -2,10 +2,6 @@
 #define _YCOE_CYCLICPOSITION_H
 
 enum {
-  CW_CSP_HALT   = 0x100 /* Stop axis according to halt option code (605Dh) */
-} cw_csp_bit8; /* Control Word cyclic synchronous positon mode bit 8 */
-
-enum {
   SW_CSP_TARGET_REACHED = 0x0400,
   SW_CSP_TARGET_IGNORED = 0x1000,
   SW_CSP_FOLLOWING_EROR = 0x2000,

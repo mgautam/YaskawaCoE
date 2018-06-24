@@ -7,8 +7,9 @@ enum {
   CW_ENABLEOP = 0xF,
   CW_DISABLEOP= 7,
   CW_QUICKSTP = 2,
-  CW_DISABLEV = 0
-} cw_bit03; /* Controlword bit 0 to 3 */
+  CW_DISABLEV = 0,
+  CW_HALT = 0x100 /* Stop axis according to halt option code (605Dh) */
+} cw_bit038; /* Controlword bit 0 to 3 & 8 */
 
 enum {
   CW_MASK_02 = 0x7,

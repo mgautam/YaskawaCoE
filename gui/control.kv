@@ -78,12 +78,17 @@
                     on_press:self.set_acceleration(1,self.cmdacc1.text)
                 TextInput:
                     id:_cmdacc1
-            CmdPosBtn:
-                cmdpos1:_cmdpos1
-                text:'Goto'
-                on_press:self.move_cmdpos(1,self.cmdpos1.text)
-            TextInput:
-                id:_cmdpos1
+            BoxLayout:
+                orientation: "horizontal"
+                CmdPosBtn:
+                    cmdpos1:_cmdpos1
+                    text:'Goto'
+                    on_press:self.move_cmdpos(1,self.cmdpos1.text)
+                TextInput:
+                    id:_cmdpos1
+            StopBtn:
+                text:'Stop'
+                on_press: self.stopaxis(1)
             MultiPosBtn:
                 cmdpos:_cmdpos1
                 text:'Multi-Axis Goto'
@@ -122,8 +127,8 @@
         BoxLayout:
             orientation:"vertical"
             size_hint:None,None
-            size:300,200
-            pos:360,60
+            size:300,250
+            pos:360,10
             BoxLayout:
                 orientation:"horizontal"
                 AbsMoveBtn:
@@ -140,12 +145,20 @@
                     on_press:self.set_acceleration(2,self.cmdacc2.text)
                 TextInput:
                     id:_cmdacc2
-            CmdPosBtn:
-                cmdpos2:_cmdpos2
-                text:'Goto'
-                on_press:self.move_cmdpos(2,self.cmdpos2.text)
-            TextInput:
-                id:_cmdpos2
+            BoxLayout:
+                orientation:"horizontal"
+                CmdPosBtn:
+                    cmdpos2:_cmdpos2
+                    text:'Goto'
+                    on_press:self.move_cmdpos(2,self.cmdpos2.text)
+                TextInput:
+                    id:_cmdpos2
+            StopBtn:
+                text:'Stop'
+                on_press:self.stopaxis(2)
+            StopBtn:
+                text:'Multi-Axis Stop'
+                on_press:self.stopAllaxes()
 
 
         GridLayout:

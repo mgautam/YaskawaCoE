@@ -15,8 +15,7 @@ enum {
 
 enum {
   CW_PPM_RELPOS = 0x40, /* Target position is relative value */
-  CW_PPM_HALT   = 0x100 /* Stop axis according to halt option code (605Dh) */
-} cw_ppm_bits68; /* Control Word Profile position mode bits 6 & 8 */
+} cw_ppm_bits6; /* Control Word Profile position mode bits 6 */
 
 enum {
   SW_PPM_TARGET_REACHED = 0x0400,

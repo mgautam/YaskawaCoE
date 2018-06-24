@@ -271,6 +271,20 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       ycoe_ppm_set_deceleration (*slaveaddr,*acceleration);
       printf("Slave %x Requested Acceleration:%d\n\r",*slaveaddr,*acceleration);
     }
+    else if (buffer[0] == 42) {
+      USINT *slaveaddr = (USINT *)(buffer + 1);
+      ycoe_setcontrolword(*slaveaddr,CW_ENABLEOP | CW_PPM_SNPI1 | CW_HALT);
+      pos_cmd_sem[*slaveaddr]=0;
+      printf("Stop Axis:%d\n\r",*slaveaddr);
+    }
+    else if (buffer[0] == 43) {
+      USINT slaveaddr;
+      for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
+        ycoe_setcontrolword(slaveaddr,CW_ENABLEOP | CW_PPM_SNPI1 | CW_HALT);
+        pos_cmd_sem[slaveaddr]=0;
+      }
+      printf("Stop all axes\n\r");
+    }
     zmq_send(responder, guiIOmap, guiIObytes, 0);
 #ifdef _WIN32
     ReleaseMutex(IOmutex);

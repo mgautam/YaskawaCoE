@@ -12,11 +12,6 @@ enum {
 } cw_ipm_mask_bit4; /*Control Word Profile Position mode Masks bits 4,5 & 9 */
 
 enum {
-  CW_IPM_DUMB = 0x40, /* Dummy var not required */
-  CW_IPM_HALT   = 0x100 /* Stop axis according to halt option code (605Dh) */
-} cw_ipm_bit8; /* Control Word Interpolation mode bit 8 */
-
-enum {
   SW_IPM_TARGET_REACHED = 0x0400,
   SW_IPM_ACTIVE   = 0x1000,
 } sw_ipm_bits1012;

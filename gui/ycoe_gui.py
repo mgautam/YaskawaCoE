@@ -39,7 +39,7 @@ class AbsMoveBtn(Button):
 
 class CmdPosBtn(Button):
     def move_cmdpos(self, slavenum, strposition):
-        ctrlwindow=self.parent.parent.parent
+        ctrlwindow=self.parent.parent.parent.parent
         distance=int(strposition)
         if distance>4294967295:
             distance=4294967295
@@ -51,6 +51,16 @@ class CmdPosBtn(Button):
         ctrlwindow.socket.send(struct.pack('<BBI',3,slavenum,distance))
         message = ctrlwindow.socket.recv()
         #print("Received reply %s [ %s ]" % (cmdmsg, message))
+
+class StopBtn(Button):
+    def stopaxis(self, slavenum):
+        ctrlwindow=self.parent.parent.parent
+        ctrlwindow.socket.send(struct.pack('<BB',42,slavenum))
+        message = ctrlwindow.socket.recv()
+    def stopAllaxes(self):
+        ctrlwindow=self.parent.parent.parent
+        ctrlwindow.socket.send(struct.pack('<BB',43,1))
+        message = ctrlwindow.socket.recv()
 
 class RegReadBtn(Button):
     def readreg(self, slaveaddr, regaddr):
