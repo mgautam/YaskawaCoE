@@ -14,5 +14,5 @@ ycoe_relpos = ycoe_relpos
 ycoe_tarpos = ycoe_tarpos
 ycoe_curpos = ycoe_curpos
 
-ycoe_stop = ycoe_stop
+ycoe_stopall = ycoe_stopall
 ycoe_test = ycoe_test
