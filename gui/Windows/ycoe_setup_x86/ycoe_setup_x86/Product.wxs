@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<Product Id="*" Name="ycoe_setup_x86" Language="1033" Version="1.0.0.0" Manufacturer="Microsoft" UpgradeCode="624c0f2c-9f1d-4360-8102-d8c05a88d4b7">
+		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Feature Id="CoreUtilities" Title="Core Utilities" Level="1" Absent ="disallow">
+      <ComponentRef Id="ycoe_vba_32bit_debug_dll" />
+      <ComponentRef Id="libzmq_32bit_debug_dll" />
+      <ComponentRef Id="libzmq_32bit_debug_lib" />
+      <ComponentRef Id="libzmq_32bit_release_dll" />
+      <ComponentRef Id="ycoe_ppm_auto.32bit" />
+      <ComponentRef Id="ycoe_ppm_debug.32bit" />
+      <ComponentRef Id="ycoe_ppm_user.32bit" />
+      <ComponentRef Id="ycoe_interface.32bit" />
+    </Feature>
+    <Feature Id="OptionalTools" Title="Optional Tools" Level="1">
+      <ComponentRef Id="ycoe_csp_debug.32bit" />
+      <ComponentRef Id="ycoe_csp_ramp.32bit" />
+      <ComponentRef Id="ycoe_csp_sin.32bit" />
+      <ComponentRef Id="ycoe_ipm_debug.32bit" />
+    </Feature>
+  </Product>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="MyProgramDir" Name="YaskawaCoE" />
+      </Directory>
+      <Directory Id="SystemFolder" />
+      <Directory Id="DesktopFolder" />
+    </Directory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="SystemComponents" Directory="SystemFolder">
+      <Component Id="ycoe_vba_32bit_debug_dll" Guid="*">
+        <File Id="Ycoe_vba_32bit_debug_dll" Source="ycoe_vba.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="libzmq_32bit_debug_dll" Guid="*">
+        <File Id="Libzmq_32bit_debug_dll" Source="libzmq-v141-mt-gd-4_2_4.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="libzmq_32bit_debug_lib" Guid="*">
+        <File Id="Libzmq_32bit_debug_lib" Source="libzmq-v141-mt-gd-4_2_4.lib" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+    <ComponentGroup Id="ProductComponents" Directory="MyProgramDir">
+      <Component Id="libzmq_32bit_release_dll" Guid="*">
+        <File Id="Libzmq_32bit_release_dll" Source="libzmq-v141-mt-4_2_4.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="ycoe_csp_debug.32bit" Guid="*">
+        <File Id="Ycoe_csp_debug.32bit" Source="ycoe_csp_debug.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="ycoe_csp_ramp.32bit" Guid="*">
+        <File Id="Ycoe_csp_ramp.32bit" Source="ycoe_csp_ramp.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="ycoe_csp_sin.32bit" Guid="*">
+        <File Id="Ycoe_csp_sin.32bit" Source="ycoe_csp_sin.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="ycoe_ipm_debug.32bit" Guid="*">
+        <File Id="Ycoe_ipm_debug.32bit" Source="ycoe_ipm_debug.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="ycoe_ppm_auto.32bit" Guid="*">
+        <File Id="Ycoe_ppm_auto.32bit" Source="ycoe_ppm_auto.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="ycoe_ppm_debug.32bit" Guid="*">
+        <File Id="Ycoe_ppm_debug.32bit" Source="ycoe_ppm_debug.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="ycoe_ppm_user.32bit" Guid="*">
+        <File Id="Ycoe_ppm_user.32bit" Source="ycoe_ppm_user.exe" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+    <ComponentGroup Id="DesktopComponents" Directory="DesktopFolder">
+      <Component Id="ycoe_interface.32bit" Guid="0779483E-D697-49E6-A415-A3763DB1A62C">
+        <RegistryValue Root='HKCU' Key='Software\Gautam\YaskawaCoE'
+                     Name='DesktopComponents'
+                     Type='string'
+                     Value='DesktopComponents'
+                     KeyPath='yes' />
+        <File Id="Ycoe_interface.32bit" Source="ycoe_interface.xlsm" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>
