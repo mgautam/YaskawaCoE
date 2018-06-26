@@ -5,6 +5,7 @@
 #include "ycoe_registers.h"
 #include "ycoe_controlstatus.h"
 #include "ycoe_profile_position.h"
+#include "ycoe_homing.h"
 #include "ycoe_interpolation.h"
 #include "ycoe_cyclicposition.h"
 

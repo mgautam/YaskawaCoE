@@ -15,6 +15,8 @@
       <ComponentRef Id="ycoe_ppm_debug.32bit" />
       <ComponentRef Id="ycoe_ppm_user.32bit" />
       <ComponentRef Id="ycoe_interface.32bit" />
+      <ComponentRef Id="launcher_32bit_release_exe" />
+      <ComponentRef Id="launcher_shortcut" />
     </Feature>
     <Feature Id="OptionalTools" Title="Optional Tools" Level="1">
       <ComponentRef Id="ycoe_csp_debug.32bit" />
@@ -71,6 +73,9 @@
       <Component Id="ycoe_ppm_user.32bit" Guid="*">
         <File Id="Ycoe_ppm_user.32bit" Source="ycoe_ppm_user.exe" KeyPath="yes" />
       </Component>
+      <Component Id="launcher_32bit_release_exe" Guid="*">
+        <File Id="Launcher_32bit_release_exe" Source="ycoe_launcher.exe" KeyPath="yes" />
+      </Component>
     </ComponentGroup>
     <ComponentGroup Id="DesktopComponents" Directory="DesktopFolder">
       <Component Id="ycoe_interface.32bit" Guid="0779483E-D697-49E6-A415-A3763DB1A62C">
@@ -80,6 +85,14 @@
                      Value='DesktopComponents'
                      KeyPath='yes' />
         <File Id="Ycoe_interface.32bit" Source="ycoe_interface.xlsm" />
+      </Component>
+      <Component Id="launcher_shortcut" Guid="71CD6A19-CA76-44DF-A4B9-04E8123036A5">
+        <RegistryValue Root='HKCU' Key='Software\Gautam\YaskawaCoE'
+                     Name='DesktopComponents'
+                     Type='string'
+                     Value='DesktopComponents'
+                     KeyPath='yes' />
+        <Shortcut Id="Launcher_shortcut" Name="YaskawaCoE" Target="[MyProgramDir]ycoe_launcher.exe" WorkingDirectory="MyProgramDir" />
       </Component>
     </ComponentGroup>
   </Fragment>
