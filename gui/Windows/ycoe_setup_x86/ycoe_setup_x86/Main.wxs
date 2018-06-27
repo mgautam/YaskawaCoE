@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<Product Id="*" Name="YaskawaCoE" Language="1033" Version="1.0.0.0" Manufacturer="Gautam" UpgradeCode="624c0f2c-9f1d-4360-8102-d8c05a88d4b7">
+		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Feature Id="CoreUtilities" Title="Core Utilities" Level="1" Absent ="disallow">
+      <ComponentRef Id="ycoe_vba_32bit_dll" />
+      <ComponentRef Id="libzmq_32bit_dll" />
+      <ComponentRef Id="libzmq_32bit_lib" />
+      <ComponentRef Id="libzmq_32bit_release_dll" />
+      <ComponentRef Id="ycoe_ppm_auto.32bit" />
+      <ComponentRef Id="ycoe_ppm_debug.32bit" />
+      <ComponentRef Id="ycoe_ppm_user.32bit" />
+      <ComponentRef Id="ycoe_interface.32bit" />
+      <ComponentRef Id="launcher_32bit_release_exe" />
+      <ComponentRef Id="launcher_shortcut" />
+    </Feature>
+    <Feature Id="OptionalTools" Title="Optional Tools" Level="1">
+      <ComponentRef Id="ycoe_csp_debug.32bit" />
+      <ComponentRef Id="ycoe_csp_ramp.32bit" />
+      <ComponentRef Id="ycoe_csp_sin.32bit" />
+      <ComponentRef Id="ycoe_ipm_debug.32bit" />
+      <ComponentRef Id="i_yaskawacoe.h" />
+      <ComponentRef Id="i_ycoe_controlstatus.h" />
+      <ComponentRef Id="i_ycoe_cyclicposition.h" />
+      <ComponentRef Id="i_ycoe_homing.h" />
+      <ComponentRef Id="i_ycoe_interpolation.h" />
+      <ComponentRef Id="i_ycoe_profile_position.h" />
+    </Feature>
+  </Product>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="MyProgramDir" Name="YaskawaCoE">
+          <Directory Id="MyIncludeDir" Name="include" />
+        </Directory>
+      </Directory>
+      <Directory Id="SystemFolder" />
+      <Directory Id="DesktopFolder" />
+    </Directory>
+  </Fragment>
+</Wix>

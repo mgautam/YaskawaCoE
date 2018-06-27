@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<Fragment>
+    <ComponentGroup Id="IncludeComponents" Directory="MyIncludeDir">
+      <Component Id="i_yaskawacoe.h" Guid="*">
+        <File Id="I_yaskawacoe.h" Source="source_files/include/yaskawacoe.h" KeyPath="yes" />
+      </Component>
+      <Component Id="i_ycoe_controlstatus.h" Guid="*">
+        <File Id="I_ycoe_controlstatus.h" Source="source_files/include/ycoe_controlstatus.h" KeyPath="yes" />
+      </Component>
+      <Component Id="i_ycoe_cyclicposition.h" Guid="*">
+        <File Id="I_ycoe_cyclicposition.h" Source="source_files/include/ycoe_cyclicposition.h" KeyPath="yes" />
+      </Component>
+      <Component Id="i_ycoe_homing.h" Guid="*">
+        <File Id="I_ycoe_homing.h" Source="source_files/include/ycoe_homing.h" KeyPath="yes" />
+      </Component>
+      <Component Id="i_ycoe_interpolation.h" Guid="*">
+        <File Id="I_ycoe_interpolation.h" Source="source_files/include/ycoe_interpolation.h" KeyPath="yes" />
+      </Component>
+      <Component Id="i_ycoe_profile_position.h" Guid="*">
+        <File Id="I_ycoe_profile_position.h" Source="source_files/include/ycoe_profile_position.h" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+	</Fragment>
+</Wix>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <ComponentGroup Id="SystemComponents" Directory="SystemFolder">
+      <Component Id="ycoe_vba_32bit_dll" Guid="*">
+        <File Id="Ycoe_vba_32bit_dll" Source="source_files\System32\ycoe_vba.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="libzmq_32bit_dll" Guid="*">
+        <File Id="Libzmq_32bit_dll" Source="source_files\System32\libzmq-v141-mt-4_2_4.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="libzmq_32bit_lib" Guid="*">
+        <File Id="Libzmq_32bit_lib" Source="source_files\System32\libzmq-v141-mt-4_2_4.lib" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+	</Fragment>
+</Wix>

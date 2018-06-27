@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="MyProgramDir">
+      <Component Id="libzmq_32bit_release_dll" Guid="*">
+        <File Id="Libzmq_32bit_release_dll" Source="source_files\libzmq-v141-mt-4_2_4.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="ycoe_csp_debug.32bit" Guid="*">
+        <File Id="Ycoe_csp_debug.32bit" Source="source_files\ycoe_csp_debug.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="ycoe_csp_ramp.32bit" Guid="*">
+        <File Id="Ycoe_csp_ramp.32bit" Source="source_files\ycoe_csp_ramp.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="ycoe_csp_sin.32bit" Guid="*">
+        <File Id="Ycoe_csp_sin.32bit" Source="source_files\ycoe_csp_sin.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="ycoe_ipm_debug.32bit" Guid="*">
+        <File Id="Ycoe_ipm_debug.32bit" Source="source_files\ycoe_ipm_debug.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="ycoe_ppm_auto.32bit" Guid="*">
+        <File Id="Ycoe_ppm_auto.32bit" Source="source_files\ycoe_ppm_auto.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="ycoe_ppm_debug.32bit" Guid="*">
+        <File Id="Ycoe_ppm_debug.32bit" Source="source_files\ycoe_ppm_debug.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="ycoe_ppm_user.32bit" Guid="*">
+        <File Id="Ycoe_ppm_user.32bit" Source="source_files\ycoe_ppm_user.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="launcher_32bit_release_exe" Guid="*">
+        <File Id="Launcher_32bit_release_exe" Source="source_files\ycoe_launcher.exe" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+	</Fragment>
+</Wix>

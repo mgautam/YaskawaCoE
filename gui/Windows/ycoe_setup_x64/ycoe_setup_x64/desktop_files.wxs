@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<Fragment>
+    <ComponentGroup Id="DesktopComponents" Directory="DesktopFolder">
+      <Component Id="ycoe_interface.32bit" Guid="0779483E-D697-49E6-A415-A3763DB1A62C">
+        <RegistryValue Root='HKCU' Key='Software\Gautam\YaskawaCoE'
+                     Name='DesktopComponents'
+                     Type='string'
+                     Value='DesktopComponents'
+                     KeyPath='yes' />
+        <File Id="Ycoe_interface.32bit" Source="source_files\Desktop\ycoe_interface.xlsm" />
+      </Component>
+      <Component Id="launcher_shortcut" Guid="71CD6A19-CA76-44DF-A4B9-04E8123036A5">
+        <RegistryValue Root='HKCU' Key='Software\Gautam\YaskawaCoE'
+                     Name='DesktopComponents'
+                     Type='string'
+                     Value='DesktopComponents'
+                     KeyPath='yes' />
+        <Shortcut Id="Launcher_shortcut" Name="YaskawaCoE" Target="[MyProgramDir]ycoe_launcher.exe" WorkingDirectory="MyProgramDir" />
+      </Component>
+    </ComponentGroup>
+	</Fragment>
+</Wix>
