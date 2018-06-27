@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
+       xmlns:util="http://schemas.microsoft.com/wix/UtilExtension" >
+	<Bundle Name="YaskawaCoE" Version="1.0.0.0" Manufacturer="Gautam" UpgradeCode="2ba946b7-93a0-4d3d-998c-1a73a591776f">
+    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense">
+      <bal:WixStandardBootstrapperApplication LicenseFile="source_files/custom_eula.rtf" />
+    </BootstrapperApplicationRef>
+
+    <util:RegistrySearch Root="HKLM" Key="SOFTWARE\Wow6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\x64" Result="exists" Variable="VCRedist64Installed"/>
+    <util:RegistrySearch Root="HKLM" Key="SOFTWARE\Wow6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" Result="exists" Variable="VCRedist86Installed"/>
+    <util:RegistrySearch Root="HKLM" Key="SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\WinPcapInst" Result="exists" Variable="WinPcapInstalled"/>
+    <!-- <util:RegistrySearch Root="HKLM" Key="SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v3.0" Result="exists" Variable="NetFrameworkInstalled"/> -->
+    
+		<Chain>
+      <ExePackage SourceFile="source_files/VC_redist.x64.exe" InstallCondition="VersionNT64" DetectCondition="VCRedist64Installed" UninstallCommand="/uninstall" />
+      <ExePackage SourceFile="source_files/VC_redist.x86.exe" DetectCondition="VCRedist86Installed" UninstallCommand="/uninstall" />
+      <ExePackage SourceFile="source_files/WinPcap_4_1_3.exe" DetectCondition="WinPcapInstalled" UninstallCommand="/uninstall" />
+      <MsiPackage SourceFile="source_files/ycoe_setup_x64.msi" InstallCondition="VersionNT64" />
+      <MsiPackage SourceFile="source_files/ycoe_setup_x86.msi" />
+		</Chain>
+	</Bundle>
+</Wix>
