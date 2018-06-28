@@ -53,6 +53,13 @@ add_subdirectory(libzmq)
 
 #build the executable foreach main file
 file(GLOB YCOE_SOURCES ycoe/*.c)
+add_library(ycoe STATIC ${YCOE_SOURCES})
+# link the object file with the soem and libzmq library
+if(UNIX)
+  target_link_libraries(ycoe m)
+endif()
+target_link_libraries(ycoe soem)
+target_link_libraries(ycoe libzmq)
 
 file(GLOB MAIN_FILES main/*.c)
 foreach (file ${MAIN_FILES})
@@ -61,17 +68,10 @@ foreach (file ${MAIN_FILES})
   message("ycoe_${appname}")
 
   # build the executable
-  add_executable(ycoe_${appname}
-    ${YCOE_SOURCES}
-    ecatcheck.c
-    ${file})
+  add_executable(ycoe_${appname} ${file})
 
-  # link the object file with the soem and libzmq library
-  if(UNIX)
-    target_link_libraries(ycoe_${appname} m)
-  endif()
-  target_link_libraries(ycoe_${appname} soem)
-  target_link_libraries(ycoe_${appname} libzmq)
+  # link the object file with the ycoe library
+  target_link_libraries(ycoe_${appname} ycoe)
 
   # set install path
   install(TARGETS ycoe_${appname} DESTINATION bin)
