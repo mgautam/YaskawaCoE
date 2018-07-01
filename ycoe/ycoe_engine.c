@@ -16,7 +16,7 @@ pthread_mutex_t ecat_mutex;
 #define EC_TIMEOUTMON 500
 
 int ycoestate = 0;
-int switch_ycoestate_to = 0;
+static int switch_ycoestate_sem = 0;
 
 char ycoe_network_pdomap[4096];
 int ycoe_pdomap_size = 0;
@@ -28,10 +28,14 @@ uint8 currentgroup = 0;
 
 void ycoe_engine(char *ifname)
 {
+    OSAL_THREAD_HANDLE ecatcheck_thread;
     int i, chk;
     int islaveindex;
 
     printf("Starting YaskawaCoE master\n");
+
+    /* create thread to handle slave error handling in OP */
+    osal_thread_create(&ecatcheck_thread, 128000, &ecatcheck, (void*) &ctime);
 
     /* initialise SOEM, bind socket to ifname */
     if (ec_init(ifname))
@@ -53,7 +57,9 @@ void ycoe_engine(char *ifname)
                 ec_statecheck(0, EC_STATE_PRE_OP, 50000);
             } while (chk-- && (ec_slave[0].state != EC_STATE_PRE_OP));
             ycoestate = YCOE_STATE_PREOP;
-            while (switch_ycoestate_to != YCOE_STATE_SAFEOP) osal_usleep(1000);
+            // Wait for signal from semaphore to switch to SAFE_OP state
+            while (switch_ycoestate_sem > 0) osal_usleep(1000);
+            --switch_ycoestate_sem;
 
             /* Configure Distributed Clock mechanism */
             ec_configdc();
@@ -69,8 +75,9 @@ void ycoe_engine(char *ifname)
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
             /* slave0 is the master. All slaves pdos are mapped to slave0 */
             ycoestate = YCOE_STATE_SAFEOP;
-            while (switch_ycoestate_to != YCOE_STATE_OPERATIONAL) osal_usleep(1000);
-
+            // Wait for signal from semaphore to switch to SAFE_OP state
+            while (switch_ycoestate_sem > 0) osal_usleep(1000);
+            --switch_ycoestate_sem;
 
             printf("segments : %d : %d %d %d %d\n",ec_group[0].nsegments ,ec_group[0].IOsegment[0],ec_group[0].IOsegment[1],ec_group[0].IOsegment[2],ec_group[0].IOsegment[3]);
 
@@ -171,6 +178,9 @@ void ycoe_engine(char *ifname)
     }
 }
 
+void switch_to_next_ycoestate(void) {
+    switch_ycoestate_sem++;
+}
 
 int ycoe_get_datamap(char **datamap_ptr)
 {

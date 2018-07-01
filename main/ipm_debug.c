@@ -26,7 +26,6 @@ extern pthread_mutex_t ecat_mutex;
 #endif
 
 extern int ycoestate;
-extern int switch_ycoestate_to;
 
 char *network_datamap_ptr;
 int network_datamap_size = 0;
@@ -38,15 +37,9 @@ DINT final_position = 0;
 /* Server for talking to GUI Application */
 OSAL_THREAD_FUNC controlserver(void *ptr) {
   int islaveindex, numslaves;
- int numpreopslaves;
-
-printf("1csState=%d\n\r",ec_slave[1].state);
 
   while (1) {
     if (ycoestate == YCOE_STATE_PREOP) {
-printf("2csState=%d\n\r",ec_slave[0].state);
-printf("2csState1=%d\n\r",ec_slave[1].state);
-printf("2csState2=%d\n\r",ec_slave[2].state);
     for (islaveindex = 1; islaveindex <= 2; islaveindex++) {
   /* Check & Set Interpolation Mode Parameters */
                 //ycoe_ipm_get_parameters(islaveindex);
@@ -64,13 +57,10 @@ printf("2csState2=%d\n\r",ec_slave[2].state);
     }
 
 
-  switch_ycoestate_to = YCOE_STATE_SAFEOP;
+  switch_to_next_ycoestate();
   while (1) {
     if (ycoestate == YCOE_STATE_SAFEOP) {
-printf("3csState=%d\n\r",ec_slave[0].state);
-printf("3csState1=%d\n\r",ec_slave[1].state);
-printf("3csState2=%d\n\r",ec_slave[2].state);
-      switch_ycoestate_to = YCOE_STATE_OPERATIONAL;
+      switch_to_next_ycoestate();
       break;
     }
     osal_usleep(100);
@@ -81,7 +71,7 @@ printf("3csState2=%d\n\r",ec_slave[2].state);
 	void *responder = zmq_socket(context, ZMQ_REP);
 	int rc = zmq_bind(responder, "tcp://*:5555");
 	char buffer[15];
- 
+
 	while (1) {
     zmq_recv(responder, buffer, 15, 0);
 
@@ -182,7 +172,7 @@ printf("3csState2=%d\n\r",ec_slave[2].state);
 
 int main(int argc, char *argv[])
 {
-  OSAL_THREAD_HANDLE thread1, thread2;
+  OSAL_THREAD_HANDLE thread1;
 #ifdef _WIN32
   ecat_mutex = CreateMutex(
       NULL,              // default security attributes
@@ -201,13 +191,10 @@ int main(int argc, char *argv[])
 
   if (argc > 1)
   {
-    /* create thread to handle slave error handling in OP */
-    //      pthread_create( &thread1, NULL, (void *) &ecatcheck, (void*) &ctime);
-    osal_thread_create(&thread1, 128000, &ecatcheck, (void*) &ctime);
-    // thread to handle gui application requests
+   // thread to handle gui application requests
     //osal_thread_create(&thread2, 128000, &controlserver, (void*)&ctime);
     /* start cyclic part */
-    osal_thread_create(&thread2, 128000, &ycoe_engine, argv[1]);
+    osal_thread_create(&thread1, 128000, &ycoe_engine, argv[1]);
     //coeController(argv[1]);
     controlserver(argv[1]);
   }

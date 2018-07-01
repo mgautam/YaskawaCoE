@@ -8,6 +8,7 @@ enum {
 } YCOE_STATE;
 
 void ycoe_engine(char *ifname);
+void switch_to_next_ycoestate(void);
 int ycoe_get_datamap(char **datamap_ptr);
 OSAL_THREAD_FUNC ecatcheck( void *ptr );
 

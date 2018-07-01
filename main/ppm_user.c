@@ -26,7 +26,6 @@ extern pthread_mutex_t ecat_mutex;
 #endif
 
 extern int ycoestate;
-extern int switch_ycoestate_to;
 
 
 char *network_datamap_ptr;
@@ -35,23 +34,8 @@ int network_datamap_size = 0;
 int pos_cmd_sem[3] = {0,0,0}; // Position Command Semaphore
 /* Server for talking to GUI Application */
 OSAL_THREAD_FUNC controlserver(void *ptr) {
-  while (1) {
-    if (ycoestate == YCOE_STATE_PREOP) {
-      switch_ycoestate_to = YCOE_STATE_SAFEOP;
-      break;
-    }
-    osal_usleep(100);
-  }
-
-  while (1) {
-    if (ycoestate == YCOE_STATE_SAFEOP) {
-      switch_ycoestate_to = YCOE_STATE_OPERATIONAL;
-      break;
-    }
-    osal_usleep(100);
-  }
-
-
+  switch_to_next_ycoestate();
+  switch_to_next_ycoestate();
 
   //  Socket to talk to clients
   void *context = zmq_ctx_new();
@@ -181,7 +165,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 
 int main(int argc, char *argv[])
 {
-  OSAL_THREAD_HANDLE thread1, thread2;
+  OSAL_THREAD_HANDLE thread1;
 #ifdef _WIN32
   ecat_mutex = CreateMutex(
       NULL,              // default security attributes
@@ -200,10 +184,8 @@ int main(int argc, char *argv[])
 
   if (argc > 1)
   {
-    /* create thread to handle slave error handling in OP */
-    osal_thread_create(&thread1, 128000, &ecatcheck, (void*) &ctime);
     /* start cyclic part */
-    osal_thread_create(&thread2, 128000, &ycoe_engine, argv[1]);
+    osal_thread_create(&thread1, 128000, &ycoe_engine, argv[1]);
     // thread to handle gui application requests
     controlserver(argv[1]);
   }
