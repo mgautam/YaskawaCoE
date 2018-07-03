@@ -27,4 +27,22 @@ int ycoe_set_mode_of_operation (int slavenum, SINT mode_of_operation) {
     return 0;
 }
 
+UDINT ycoe_get_vendor_id (int slavenum) {
+    UDINT udintbuff;
+    int udintsize = UDINT_SIZE;
+    ec_SDOread(slavenum,0x1018,1,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
+    printf("Slave %d VendorID %x\n\r",slavenum, udintbuff);
+    return udintbuff;
+}
 
+UDINT ycoe_get_product_code (int slavenum) {
+    UDINT udintbuff;
+    int udintsize = UDINT_SIZE;
+    ec_SDOread(slavenum,0x1018,2,0,&udintsize,&udintbuff,EC_TIMEOUTRXM);
+    printf("Slave %d ProductCode %x\n\r",slavenum, udintbuff);
+    return udintbuff;
+}
+
+void ycoe_print_identity (int slavenum) {
+    printf("Slave: %d VendorID:%x ProductCode:%x\n\r",slavenum, ycoe_get_vendor_id(slavenum), ycoe_get_product_code(slavenum));
+}

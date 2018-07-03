@@ -1,0 +1,251 @@
+<StsLabel@Button>:
+    #size_hint:None,None
+    #size:root.width/5,root.height/15
+    text_size:self.size
+    halign:'center'
+    valign:'middle'
+
+<controlWindow@FloatLayout>:
+    cmdlbl:cmd_lbl
+    statuslbl:status_lbl
+
+    errorcode1:_errorcode1
+    tarpos1:_tarpos1
+    curpos1:_curpos1
+    statusword1:_status1
+    controlword1:_control1
+
+    errorcode2:_errorcode2
+    tarpos2:_tarpos2
+    curpos2:_curpos2
+    statusword2:_status2
+    controlword2:_control2
+
+
+    digin:_digin
+    digout:_digout
+    anin1:_anin1
+    anin2:_anin2
+    anin3:_anin3
+    anin4:_anin4
+    anin5:_anin5
+    anin6:_anin6
+    anin7:_anin7
+    anin8:_anin8
+
+    RelativeLayout:
+        size_hint:None,None
+        size:root.width,root.height-30
+        pos:0,30
+        Label:
+            size_hint:None,None
+            size:160,30
+            pos:100,510
+            text: "Slave 1"
+        GridLayout:
+            cols:2
+            rows:5
+            size_hint:None,None
+            size:300,200
+            pos:30,300
+            StsLabel:
+                text:"Error Code:"
+            StsLabel:
+                id:_errorcode1
+            StsLabel:
+                text:"Target Position"
+            StsLabel:
+                id:_tarpos1
+            StsLabel:
+                text:"Current Position"
+            StsLabel:
+                id:_curpos1
+            StsLabel:
+                text:"StatusWord"
+            StsLabel:
+                id:_status1
+            StsLabel:
+                text:"ControlWord"
+            StsLabel:
+                id:_control1
+        BoxLayout:
+            orientation:"vertical"
+            size_hint:None,None
+            size:300,250
+            pos:30,10
+            BoxLayout:
+                orientation:"horizontal"
+                AbsMoveBtn:
+                    cmdvel1:_cmdvel1
+                    text:'Set Velocity'
+                    on_press:self.set_velocity(1,self.cmdvel1.text)
+                TextInput:
+                    id:_cmdvel1
+            BoxLayout:
+                orientation:"horizontal"
+                AbsMoveBtn:
+                    cmdacc1:_cmdacc1
+                    text:'Set Acceleration'
+                    on_press:self.set_acceleration(1,self.cmdacc1.text)
+                TextInput:
+                    id:_cmdacc1
+            BoxLayout:
+                orientation: "horizontal"
+                CmdPosBtn:
+                    cmdpos1:_cmdpos1
+                    text:'Goto'
+                    on_press:self.move_cmdpos(1,self.cmdpos1.text)
+                TextInput:
+                    id:_cmdpos1
+            StopBtn:
+                text:'Stop'
+                on_press: self.stopaxis(1)
+            MultiPosBtn:
+                cmdpos:_cmdpos1
+                text:'Multi-Axis Goto'
+                on_press:self.move_cmdpos(self.cmdpos.text)
+        Label:
+            size_hint:None,None
+            size:160,30
+            pos:430,510
+            text: "Slave 2"
+        GridLayout:
+            cols:2
+            rows:5
+            size_hint:None,None
+            size:300,200
+            pos:360,300
+            StsLabel:
+                text:"Error Code:"
+            StsLabel:
+                id:_errorcode2
+            StsLabel:
+                text:"Target Position"
+            StsLabel:
+                id:_tarpos2
+            StsLabel:
+                text:"Current Position"
+            StsLabel:
+                id:_curpos2
+            StsLabel:
+                text:"StatusWord"
+            StsLabel:
+                id:_status2
+            StsLabel:
+                text:"ControlWord"
+            StsLabel:
+                id:_control2
+        BoxLayout:
+            orientation:"vertical"
+            size_hint:None,None
+            size:300,250
+            pos:360,10
+            BoxLayout:
+                orientation:"horizontal"
+                AbsMoveBtn:
+                    cmdvel2:_cmdvel2
+                    text:'Set Velocity'
+                    on_press:self.set_velocity(2,self.cmdvel2.text)
+                TextInput:
+                    id:_cmdvel2
+            BoxLayout:
+                orientation:"horizontal"
+                AbsMoveBtn:
+                    cmdacc2:_cmdacc2
+                    text:'Set Acceleration'
+                    on_press:self.set_acceleration(2,self.cmdacc2.text)
+                TextInput:
+                    id:_cmdacc2
+            BoxLayout:
+                orientation:"horizontal"
+                CmdPosBtn:
+                    cmdpos2:_cmdpos2
+                    text:'Goto'
+                    on_press:self.move_cmdpos(2,self.cmdpos2.text)
+                TextInput:
+                    id:_cmdpos2
+            StopBtn:
+                text:'Stop'
+                on_press:self.stopaxis(2)
+            StopBtn:
+                text:'Multi-Axis Stop'
+                on_press:self.stopAllaxes()
+
+
+        Label:
+            size_hint:None,None
+            size:160,30
+            pos:760,510
+            text: "RIO 574x0"
+        GridLayout:
+            cols:2
+            rows:10
+            size_hint:None,None
+            size:300,450
+            pos:690,30
+            StsLabel:
+                text:"Digital Inputs:"
+            StsLabel:
+                id:_digin
+            StsLabel:
+                text:"Digital Outputs:"
+            StsLabel:
+                id:_digout
+            StsLabel:
+                on_press:self.toggle_dout(3,1)
+                text:"Analog Input 1"
+            StsLabel:
+                id:_anin1
+            StsLabel:
+                on_press:self.toggle_dout(3,2)
+                text:"Analog Input 2"
+            StsLabel:
+                id:_anin2
+            StsLabel:
+                on_press:self.toggle_dout(3,3)
+                text:"Analog Input 3"
+            StsLabel:
+                id:_anin3
+            StsLabel:
+                on_press:self.toggle_dout(3,4)
+                text:"Analog Input 4"
+            StsLabel:
+                id:_anin4
+            StsLabel:
+                on_press:self.toggle_dout(3,5)
+                text:"Analog Input 5"
+            StsLabel:
+                id:_anin5
+            StsLabel:
+                on_press:self.toggle_dout(3,6)
+                text:"Analog Input 6"
+            StsLabel:
+                id:_anin6
+            StsLabel:
+                on_press:self.toggle_dout(3,7)
+                text:"Analog Input 7"
+            StsLabel:
+                id:_anin7
+            StsLabel:
+                on_press:self.toggle_dout(3,8)
+                text:"Analog Input 8"
+            StsLabel:
+                id:_anin8
+
+
+    Label:
+        id: cmd_lbl
+        size_hint:None,None
+        size:root.width,15
+        pos:0,15
+        halign: 'left'
+        text_size: self.size
+        text:"Last Command: " + str(root.width) + "," + str(root.height)
+    Label:
+        id: status_lbl
+        size_hint:None,None
+        size:root.width,15
+        pos:0,0
+        halign: 'left'
+        text_size: self.size
+        text:"Status: "

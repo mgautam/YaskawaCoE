@@ -9,5 +9,6 @@
 #include "ycoe_interpolation.h"
 #include "ycoe_cyclicposition.h"
 //#include "ycoe_engine.h"
+#include "rio_574X0.h"
 
 #endif

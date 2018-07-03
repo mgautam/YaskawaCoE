@@ -34,16 +34,24 @@ int network_datamap_size = 0;
 int pos_cmd_sem[3] = {0,0,0}; // Position Command Semaphore
 /* Server for talking to GUI Application */
 OSAL_THREAD_FUNC controlserver(void *ptr) {
-  switch_to_next_ycoestate();
-  switch_to_next_ycoestate();
-
-
   //  Socket to talk to clients
- 	void *context = zmq_ctx_new();
+  void *context = zmq_ctx_new();
 	void *responder = zmq_socket(context, ZMQ_REP);
 	int rc = zmq_bind(responder, "tcp://*:5555");
 	char buffer[15];
   int islaveindex, numslaves;
+
+  switch_to_next_ycoestate();
+  // Print Identity Object of all slaves
+  /*while (ycoestate != YCOE_STATE_PREOP) osal_usleep(1000);
+  network_datamap_size = ycoe_get_datamap(&network_datamap_ptr);
+  memcpy(&numslaves,network_datamap_ptr,4);
+  for (islaveindex = 1; islaveindex <= numslaves; islaveindex++) {
+      ycoe_print_identity(islaveindex);
+  }*/
+  //rio_setup_analog_inputs(3);
+  switch_to_next_ycoestate();
+
 
 	while (1) {
     zmq_recv(responder, buffer, 15, 0);
@@ -78,6 +86,12 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       INT *index = (INT *)(buffer + 1+1);
       INT *subindex = (INT *)(buffer + 1+1+4);
       printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",*slaveaddr,*index,*subindex,ycoe_readCOparam(*slaveaddr, *index, *subindex));
+    }
+    else if (buffer[0] == 23) {
+      USINT *slaveaddr = (USINT *)(buffer + 1);
+      INT *ioaddr = (INT *)(buffer + 1+1);
+      printf("Slave %x Requested toggle dout:%d\n\r",*slaveaddr,*ioaddr);
+      rio_toggle_dout (*slaveaddr,*ioaddr);
     }
     else if (buffer[0] == 33) {
       USINT slaveaddr;
@@ -118,7 +132,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
     // User input ends
 
     // Control Logic
-    for (islaveindex = 1; islaveindex <= numslaves; islaveindex++) {
+    for (islaveindex = 1; islaveindex <= 2; islaveindex++) {
       //ycoe_printstatus(1);
       if(ycoe_checkstatus(islaveindex,SW_SWITCHON_DISABLED)) {
          /* Check & Set Profile Position Mode Parameters */

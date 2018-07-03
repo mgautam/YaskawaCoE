@@ -78,6 +78,12 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       INT *subindex = (INT *)(buffer + 1+1+4);
       printf("Slave %x Index:Subindex %x:%x Content = %x\n\r",*slaveaddr,*index,*subindex,ycoe_readCOparam(*slaveaddr, *index, *subindex));
     }
+    else if (buffer[0] == 23) {
+      USINT *slaveaddr = (USINT *)(buffer + 1);
+      INT *ioaddr = (INT *)(buffer + 1+1);
+      printf("Slave %x Requested toggle dout:%d\n\r",*slaveaddr,*ioaddr);
+      rio_toggle_dout (*slaveaddr,*ioaddr);
+    }
     else if (buffer[0] == 33) {
       USINT slaveaddr;
       DINT *targetposition = (DINT *)(buffer + 1);
@@ -117,7 +123,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
     // User input ends
 
     // Control Logic
-    for (islaveindex = 1; islaveindex <= numslaves; islaveindex++) {
+    for (islaveindex = 1; islaveindex <= 2; islaveindex++) {
       //ycoe_printstatus(1);
       if(ycoe_checkstatus(islaveindex,SW_SWITCHON_DISABLED)) {
          /* Check & Set Profile Position Mode Parameters */

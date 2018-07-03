@@ -35,4 +35,7 @@ enum {
 
 int ycoe_set_mode_of_operation (int slavenum, SINT mode_of_operation);
 
+UDINT ycoe_get_vendor_id (int slavenum);
+UDINT ycoe_get_product_code (int slavenum);
+void ycoe_print_identity (int slavenum);
 #endif

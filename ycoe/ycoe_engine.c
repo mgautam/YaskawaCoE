@@ -50,6 +50,9 @@ void ycoe_engine(char *ifname)
         if ( ec_config_init(FALSE) > 0 )
         {
             printf("%d slaves found and configured. PRE_OP requested on all slaves.\n",ec_slavecount);
+            //memcpy(ycoe_network_pdomap, &ec_slavecount, 4);
+            //ycoe_pdomap_size=4;
+
             /* wait for all slaves to reach PREOP state */
             chk = 40;
             do
@@ -58,7 +61,7 @@ void ycoe_engine(char *ifname)
             } while (chk-- && (ec_slave[0].state != EC_STATE_PRE_OP));
             ycoestate = YCOE_STATE_PREOP;
             // Wait for signal from semaphore to switch to SAFE_OP state
-            while (switch_ycoestate_sem > 0) osal_usleep(1000);
+            while (switch_ycoestate_sem <= 0) osal_usleep(1000);
             --switch_ycoestate_sem;
 
             /* Configure Distributed Clock mechanism */
@@ -76,7 +79,7 @@ void ycoe_engine(char *ifname)
             /* slave0 is the master. All slaves pdos are mapped to slave0 */
             ycoestate = YCOE_STATE_SAFEOP;
             // Wait for signal from semaphore to switch to SAFE_OP state
-            while (switch_ycoestate_sem > 0) osal_usleep(1000);
+            while (switch_ycoestate_sem <= 0) osal_usleep(1000);
             --switch_ycoestate_sem;
 
             printf("segments : %d : %d %d %d %d\n",ec_group[0].nsegments ,ec_group[0].IOsegment[0],ec_group[0].IOsegment[1],ec_group[0].IOsegment[2],ec_group[0].IOsegment[3]);
