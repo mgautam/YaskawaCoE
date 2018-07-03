@@ -171,7 +171,7 @@
     <None Include="defFile.def" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="libzmq-v141-mt-4_2_4.lib" />
+    <Library Include="libzmq-v141-mt-4_2_4x64.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

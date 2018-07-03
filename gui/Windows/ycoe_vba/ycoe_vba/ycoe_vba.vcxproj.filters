@@ -42,7 +42,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="libzmq-v141-mt-4_2_4.lib">
+    <Library Include="libzmq-v141-mt-4_2_4x64.lib">
       <Filter>Resource Files</Filter>
     </Library>
   </ItemGroup>

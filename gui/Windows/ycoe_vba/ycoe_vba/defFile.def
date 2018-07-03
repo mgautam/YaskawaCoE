@@ -15,4 +15,7 @@ ycoe_tarpos = ycoe_tarpos
 ycoe_curpos = ycoe_curpos
 
 ycoe_stopall = ycoe_stopall
+ycoe_toggledout = ycoe_toggledout
+
 ycoe_test = ycoe_test
+ycoe_ticker = ycoe_ticker
