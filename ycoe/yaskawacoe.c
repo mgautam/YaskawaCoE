@@ -8,6 +8,8 @@
 #include "ethercat.h"
 #include "ycoetype.h"
 
+UDINT ycoe_vendor_ids[EC_MAXSLAVE];
+UDINT ycoe_product_codes[EC_MAXSLAVE];
 
 int ycoe_get_mode_of_operation (int slavenum) {
     SINT sintbuff;
@@ -46,3 +48,15 @@ UDINT ycoe_get_product_code (int slavenum) {
 void ycoe_print_identity (int slavenum) {
     printf("Slave: %d VendorID:%x ProductCode:%x\n\r",slavenum, ycoe_get_vendor_id(slavenum), ycoe_get_product_code(slavenum));
 }
+
+void discover_slave_identities (void) {
+  int islaveindex;
+  printf("Discovering slaves...\n\r");
+  for (islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
+      ycoe_vendor_ids[islaveindex] = ycoe_get_vendor_id(islaveindex);
+      ycoe_product_codes[islaveindex] = ycoe_get_product_code(islaveindex);
+      printf("Slave: %d VendorID:%x ProductCode:%x\n\r",islaveindex, ycoe_vendor_ids[islaveindex], ycoe_product_codes[islaveindex]);
+  }
+}
+
+

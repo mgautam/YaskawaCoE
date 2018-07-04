@@ -1,6 +1,7 @@
 #ifndef _YCOETYPE_H
 #define _YCOETYPE_H
 
+#include "ethercat.h" // Used only for EC_MAXSLAVE
 #include "ethercattype.h"
 
 /* Yaskawa CoE datatype and size definitions */
@@ -35,7 +36,11 @@ enum {
 
 int ycoe_set_mode_of_operation (int slavenum, SINT mode_of_operation);
 
+extern UDINT ycoe_vendor_ids[EC_MAXSLAVE];
+extern UDINT ycoe_product_codes[EC_MAXSLAVE];
+
 UDINT ycoe_get_vendor_id (int slavenum);
 UDINT ycoe_get_product_code (int slavenum);
 void ycoe_print_identity (int slavenum);
+void discover_slave_identities (void);
 #endif

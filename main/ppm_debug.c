@@ -43,7 +43,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
 
   switch_to_next_ycoestate();
   // Print Identity Object of all slaves
-  /*while (ycoestate != YCOE_STATE_PREOP) osal_usleep(1000);
+  /*while (ycoestate != YCOE_STATE_SAFEOP) osal_usleep(1000);
   network_datamap_size = ycoe_get_datamap(&network_datamap_ptr);
   memcpy(&numslaves,network_datamap_ptr,4);
   for (islaveindex = 1; islaveindex <= numslaves; islaveindex++) {
