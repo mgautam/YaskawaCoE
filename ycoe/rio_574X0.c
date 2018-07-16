@@ -37,16 +37,16 @@ int rio_reset_digital_output(int slavenum, int io_port) {
     return 0;
 }
 int rio_toggle_dout(int slavenum, int io_port) {
-    printf("Toggle dout:%d ",io_port);
+    //printf("Toggle dout:%d ",io_port);
     UINT *digital_outputs = (UINT *)ec_slave[slavenum].outputs;
     if (io_port < 1) return -1;// io_port is 1 indexed, but starts from 17
 
     if((*digital_outputs & (1 << (io_port - 1))) != 0) {
-      printf("off\n\r");
+      //printf("off\n\r");
       *digital_outputs = *digital_outputs & ~((1 << (io_port-1)) & 0xFFFF);
     }
     else {
-      printf("on\n\r");
+      //printf("on\n\r");
       *digital_outputs = *digital_outputs | ((1 << (io_port-1)) & 0xFFFF);
     }
     return 0;
