@@ -16,6 +16,7 @@ ycoe_curpos = ycoe_curpos
 
 ycoe_stopall = ycoe_stopall
 ycoe_toggledout = ycoe_toggledout
+ycoe_getdout = ycoe_getdout
 
 ycoe_test = ycoe_test
 ycoe_ticker = ycoe_ticker

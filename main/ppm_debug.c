@@ -100,6 +100,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
       USINT slaveaddr;
       DINT *targetposition = (DINT *)(buffer + 1);
       for (slaveaddr = 1; slaveaddr <= numslaves; slaveaddr++) {
+        if (ycoe_vendor_ids[slaveaddr] != 0x539) continue;
         ycoe_ppm_set_position(slaveaddr, *targetposition);//Vulnerable to racing conditions
         pos_cmd_sem[slaveaddr]++;
         printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
@@ -127,6 +128,7 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
     else if (buffer[0] == 43) {
       USINT slaveaddr;
       for (slaveaddr = 1; slaveaddr <= numslaves; slaveaddr++) {
+        if (ycoe_vendor_ids[slaveaddr] != 0x539) continue;
         ycoe_setcontrolword(slaveaddr,CW_ENABLEOP | CW_PPM_SNPI1 | CW_HALT);
         pos_cmd_sem[slaveaddr]=0;
       }
