@@ -130,7 +130,6 @@ void ycoe_engine(char *ifname)
 {
     OSAL_THREAD_HANDLE ecatcheck_thread;
     int i, chk;
-    int islaveindex;
 
     printf("Starting YaskawaCoE master\n");
 

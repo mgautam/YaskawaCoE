@@ -29,6 +29,9 @@
       <Component Id="launcher_64bit_release_exe" Guid="*">
         <File Id="Launcher_64bit_release_exe" Source="source_files\ycoe_launcher.exe" KeyPath="yes" />
       </Component>
+      <Component Id="license_rtf" Guid="*">
+        <File Id="License_rtf" Source="source_files\license.rtf" KeyPath="yes" />
+      </Component>
     </ComponentGroup>
 	</Fragment>
 </Wix>

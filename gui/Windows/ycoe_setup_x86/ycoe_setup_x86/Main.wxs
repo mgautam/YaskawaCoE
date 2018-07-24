@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-	<Product Id="*" Name="YaskawaCoE" Language="1033" Version="1.0.0.0" Manufacturer="Gautam" UpgradeCode="624c0f2c-9f1d-4360-8102-d8c05a88d4b7">
+	<Product Id="*" Name="YaskawaCoE" Language="1033" Version="2.0.0.0" Manufacturer="Gautam" UpgradeCode="624c0f2c-9f1d-4360-8102-d8c05a88d4b7">
 		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate EmbedCab="yes" />
+
+    <WixVariable Id="WixUILicenseRtf" Value ="source_files\license.rtf"/>
+    <UIRef Id="WixUI_FeatureTree"/>
 
     <Feature Id="CoreUtilities" Title="Core Utilities" Level="1" Absent ="disallow">
       <ComponentRef Id="ycoe_vba_32bit_dll" />
@@ -17,6 +20,7 @@
       <ComponentRef Id="ycoe_interface.32bit" />
       <ComponentRef Id="launcher_32bit_release_exe" />
       <ComponentRef Id="launcher_shortcut" />
+      <ComponentRef Id="license_rtf" />
     </Feature>
     <Feature Id="OptionalTools" Title="Optional Tools" Level="1">
       <ComponentRef Id="ycoe_csp_debug.32bit" />
