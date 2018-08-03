@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-	<Product Id="*" Name="YaskawaCoE" Language="1033" Version="2.0.0.0" Manufacturer="Gautam" UpgradeCode="624c0f2c-9f1d-4360-8102-d8c05a88d4b7">
+	<Product Id="*" Name="YaskawaCoE" Language="1033" Version="3.0.0.0" Manufacturer="Gautam" UpgradeCode="624c0f2c-9f1d-4360-8102-d8c05a88d4b7">
 		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
