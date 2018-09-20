@@ -1,0 +1,10 @@
+cd osal
+make clean
+cd ../oshw
+make clean
+cd ../soem
+make clean
+cd ../ycoe
+make clean
+cd ..
+make clean

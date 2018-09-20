@@ -7,6 +7,17 @@
  * (c)Gautam Manoharan 2017 - 2018
  */
 
+#include <stdlib.h>
+#include <signal.h>
+#include <sys/mman.h>
+#include <alchemy/task.h>
+#include <alchemy/timer.h>
+#include <alchemy/sem.h>
+//#include <rtdm/testing.h>
+#include <boilerplate/trace.h>
+#include <xenomai/init.h>
+
+
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
@@ -19,6 +30,9 @@
 #endif
 
 #define EC_TIMEOUTMON 500
+
+RT_TASK engine_task;
+int run=1;
 
 #ifdef _WIN32
 HANDLE IOmutex;
@@ -37,20 +51,20 @@ volatile int wkc;
 boolean inOP;
 uint8 currentgroup = 0;
 
-void coeController(char *ifname)
+void coeController(void *arg)
 {
+    char ifname[32]="wiznet";
+
     int i, chk;
     inOP = FALSE;
     int islaveindex;
-    DINT curr_position, prev_position = 0;
-    DINT slave_velocity = 0;
+    //DINT curr_position, prev_position = 0;
+    //DINT slave_velocity = 0;
 
-    ec_timet current_time, previous_time, diff_time;
-    unsigned int act_cycle_time;
+    //ec_timet current_time, previous_time, diff_time;
+    //unsigned int act_cycle_time;
     //unsigned int min_cycle_time = 999999, max_cycle_time = 0, avg_cycle_time = 0, sum_cycle_time = 0;
 
-    FILE *posfile = fopen("slave_positions.csv","w");
-    fprintf(posfile, "Cycle, CycleTime, Slave1 Target Position, Actual Position, Slave2 Target Position,Actual Position,\n");
 
     /* initialise SOEM, bind socket to ifname */
     if (ec_init(ifname))
@@ -112,12 +126,17 @@ ycoe_csp_setup_posarray(2,500,5);
                 printf("Operational state reached for all slaves.\n");
                 inOP = TRUE;
 
-                previous_time = osal_current_time();
+                //previous_time = osal_current_time();
 
                 /* cyclic loop */
 				        i = 0;
-        				while(1)
+                rt_task_sleep(1e6);
+                rt_task_set_periodic(NULL, TM_NOW, 1000000);//1ms
+
+        				while(run)
                 {
+                     rt_task_wait_period(NULL);   //wait for next cycle
+
 #ifdef _WIN32
            						WaitForSingleObject(IOmutex, INFINITE);
 #else
@@ -135,7 +154,7 @@ ycoe_csp_setup_posarray(2,500,5);
                         else if(ycoe_checkstatus(islaveindex,SW_SWITCHED_ON))
                         {
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
-                            final_position = 1500000000;//81920;
+                            //final_position = 1500000000;//81920;
                             //ycoe_csp_set_position(islaveindex, 1500000000);
                             pos_cmd_sem[islaveindex] = 1;
                         }
@@ -193,15 +212,15 @@ ycoe_csp_setup_posarray(2,500,5);
                    osal_usleep(500);
 
 
-                   current_time = osal_current_time();
-                   osal_time_diff(&previous_time,&current_time,&diff_time);
-                   act_cycle_time = diff_time.usec;
+                   //current_time = osal_current_time();
+                   //osal_time_diff(&previous_time,&current_time,&diff_time);
+                   //act_cycle_time = diff_time.usec;
                    /*if (act_cycle_time < min_cycle_time) min_cycle_time = act_cycle_time;
                    if (act_cycle_time > max_cycle_time) max_cycle_time = act_cycle_time;
                    sum_cycle_time += act_cycle_time;
                    avg_cycle_time = (int) (((float)sum_cycle_time)/((float)i));
                    printf("cycle:%d act:%6d min:%6d avg:%6d max:%6d\r",i,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);*/
-                   previous_time = current_time;
+                   //previous_time = current_time;
 
                    //fprintf(posfile,"%d,%d,%d,%d,%d,%d,\n",i,act_cycle_time,*(UDINT *)(ec_slave[1].outputs+2),*(UDINT *)(ec_slave[1].inputs+2),*(UDINT *)(ec_slave[2].outputs+2),*(UDINT *)(ec_slave[2].inputs+2));
                 }
@@ -239,80 +258,8 @@ ycoe_csp_setup_posarray(2,500,5);
     }
 }
 
-OSAL_THREAD_FUNC ecatcheck( void *ptr )
-{
-  int slave;
-  (void)ptr;                  /* Not used */
-
-  while(1)
-  {
-    if( inOP && ((wkc < expectedWKC) || ec_group[currentgroup].docheckstate))
-    {
-      /* one ore more slaves are not responding */
-      ec_group[currentgroup].docheckstate = FALSE;
-      ec_readstate();
-      for (slave = 1; slave <= ec_slavecount; slave++)
-      {
-        if ((ec_slave[slave].group == currentgroup) && (ec_slave[slave].state != EC_STATE_OPERATIONAL))
-        {
-          ec_group[currentgroup].docheckstate = TRUE;
-          if (ec_slave[slave].state == (EC_STATE_SAFE_OP + EC_STATE_ERROR))
-          {
-            printf("ERROR : slave %d is in SAFE_OP + ERROR, attempting ack.\n", slave);
-            ec_slave[slave].state = (EC_STATE_SAFE_OP + EC_STATE_ACK);
-            ec_writestate(slave);
-          }
-          else if(ec_slave[slave].state == EC_STATE_SAFE_OP)
-          {
-            printf("WARNING : slave %d is in SAFE_OP, change to OPERATIONAL.\n", slave);
-            ec_slave[slave].state = EC_STATE_OPERATIONAL;
-            ec_writestate(slave);
-          }
-          else if(ec_slave[slave].state > EC_STATE_NONE)
-          {
-            if (ec_reconfig_slave(slave, EC_TIMEOUTMON))
-            {
-              ec_slave[slave].islost = FALSE;
-              printf("MESSAGE : slave %d reconfigured\n",slave);
-            }
-          }
-          else if(!ec_slave[slave].islost)
-          {
-            /* re-check state */
-            ec_statecheck(slave, EC_STATE_OPERATIONAL, EC_TIMEOUTRET);
-            if (ec_slave[slave].state == EC_STATE_NONE)
-            {
-              ec_slave[slave].islost = TRUE;
-              printf("ERROR : slave %d lost\n",slave);
-            }
-          }
-        }
-        if (ec_slave[slave].islost)
-        {
-          if(ec_slave[slave].state == EC_STATE_NONE)
-          {
-            if (ec_recover_slave(slave, EC_TIMEOUTMON))
-            {
-              ec_slave[slave].islost = FALSE;
-              printf("MESSAGE : slave %d recovered\n",slave);
-            }
-          }
-          else
-          {
-            ec_slave[slave].islost = FALSE;
-            printf("MESSAGE : slave %d found\n",slave);
-          }
-        }
-      }
-      if(!ec_group[currentgroup].docheckstate)
-        printf("OK : all slaves resumed OPERATIONAL.\n");
-    }
-    osal_usleep(10000);
-  }
-}
-
 /* Server for talking to GUI Application */
-OSAL_THREAD_FUNC controlserver(void *ptr) {
+void controlserver(void *ptr) {
 
   /* Automatic Motion Sequence */
   int position_request = 300000000;
@@ -382,9 +329,21 @@ OSAL_THREAD_FUNC controlserver(void *ptr) {
   fclose(filepointer);
 }
 
+void catch_signal(int sig)
+{
+    run=0;
+    osal_usleep(1e5);
+    rt_task_delete(&engine_task);
+    exit(1);
+}
+
 int main(int argc, char *argv[])
 {
-  OSAL_THREAD_HANDLE thread1, thread2;
+  signal(SIGTERM, catch_signal);
+  signal(SIGINT, catch_signal);
+
+  mlockall(MCL_CURRENT | MCL_FUTURE);
+
 #ifdef _WIN32
   IOmutex = CreateMutex(
       NULL,              // default security attributes
@@ -409,10 +368,11 @@ int main(int argc, char *argv[])
     // thread to handle gui application requests
     //osal_thread_create(&thread2, 128000, &controlserver, (void*)&ctime);
     /* start cyclic part */
-    osal_thread_create_rt(&thread2, 128000, &coeController, argv[1]);
+    rt_task_create(&engine_task, "ycoe_engine", 0, 90, 0 );
+    rt_task_start(&engine_task, &coeController, NULL);
+    //osal_thread_create_rt(&thread2, 128000, &coeController, argv[1]);
     //coeController(argv[1]);
-    //controlserver(argv[1]);
-    ecatcheck((void *) &ctime);
+    controlserver(argv[1]);
   }
   else
   {
