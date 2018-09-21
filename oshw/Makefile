@@ -11,7 +11,7 @@ CC = gcc
 AR = ar
 
 # define any compile-time flags
-CFLAGS = -g -O3 -ffunction-sections
+CFLAGS = -g -O0 -ffunction-sections
 
 # define any directories containing header files other than /usr/include
 #
@@ -19,7 +19,7 @@ INCLUDES += -I/usr/xenomai/include
 INCLUDES += -I../osal
 INCLUDES += -I../soem
 
-AFLAGS = cr
+AFLAGS = crus
 
 
 # define the C source files
@@ -34,7 +34,7 @@ SRCS = nicdrv.c oshw.c
 # with the .o suffix
 #
 OBJS = $(SRCS:.c=.o)
-
+  
 # define the executable file 
 MAIN = oshw
 

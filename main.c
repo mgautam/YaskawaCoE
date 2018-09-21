@@ -34,12 +34,6 @@
 RT_TASK engine_task;
 int run=1;
 
-#ifdef _WIN32
-HANDLE IOmutex;
-#else
-pthread_mutex_t IOmutex;
-#endif
-
 char guiIOmap[4096];
 int guiIObytes = 0;
 int graphIndex = 44; //4+(4+4+6+6)*2
@@ -69,7 +63,7 @@ void coeController(void *arg)
     /* initialise SOEM, bind socket to ifname */
     if (ec_init(ifname))
     {
-        printf("ec_init on %s succeeded.\n",ifname);
+        rt_printf("ec_init on %s succeeded.\n",ifname);
 
         /*
            ec_config_init find and auto-config slaves.
@@ -78,7 +72,7 @@ void coeController(void *arg)
         */
         if ( ec_config_init(FALSE) > 0 )
         {
-            printf("%d slaves found and configured. PRE_OP requested on all slaves.\n",ec_slavecount);
+            rt_printf("%d slaves found and configured. PRE_OP requested on all slaves.\n",ec_slavecount);
 
             /* Configure Distributed Clock mechanism */
             ec_configdc();
@@ -98,14 +92,14 @@ ycoe_csp_setup_posarray(2,500,5);
                Outputs are placed together in the beginning of IOmap, inputs follow
             */
             ec_config_map(&IOmap);
-            printf("Slaves mapped, state to SAFE_OP requested.\n");
+            rt_printf("Slaves mapped, state to SAFE_OP requested.\n");
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
             /* slave0 is the master. All slaves pdos are mapped to slave0 */
 
-            printf("Request operational state for all slaves\n");
+            rt_printf("Request operational state for all slaves\n");
             expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
-            printf("Calculated workcounter %d\n", expectedWKC);
+            rt_printf("Calculated workcounter %d\n", expectedWKC);
             ec_slave[0].state = EC_STATE_OPERATIONAL;
             /* send one valid process data to make outputs in slaves happy*/
             ec_send_processdata();
@@ -123,7 +117,7 @@ ycoe_csp_setup_posarray(2,500,5);
 
             if (ec_slave[0].state == EC_STATE_OPERATIONAL )
             {
-                printf("Operational state reached for all slaves.\n");
+                rt_printf("Operational state reached for all slaves.\n");
                 inOP = TRUE;
 
                 //previous_time = osal_current_time();
@@ -137,11 +131,6 @@ ycoe_csp_setup_posarray(2,500,5);
                 {
                      rt_task_wait_period(NULL);   //wait for next cycle
 
-#ifdef _WIN32
-           						WaitForSingleObject(IOmutex, INFINITE);
-#else
-                      pthread_mutex_lock(&IOmutex);
-#endif
  				          	i++;
 
                     for (islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
@@ -204,13 +193,6 @@ ycoe_csp_setup_posarray(2,500,5);
                       }
                       guiIObytes = usedbytes;
                    }
-#ifdef _WIN32
-					          	ReleaseMutex(IOmutex);
-#else
-                      pthread_mutex_unlock(&IOmutex);
-#endif
-                   osal_usleep(500);
-
 
                    //current_time = osal_current_time();
                    //osal_time_diff(&previous_time,&current_time,&diff_time);
@@ -219,114 +201,43 @@ ycoe_csp_setup_posarray(2,500,5);
                    if (act_cycle_time > max_cycle_time) max_cycle_time = act_cycle_time;
                    sum_cycle_time += act_cycle_time;
                    avg_cycle_time = (int) (((float)sum_cycle_time)/((float)i));
-                   printf("cycle:%d act:%6d min:%6d avg:%6d max:%6d\r",i,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);*/
+                   rt_printf("cycle:%d act:%6d min:%6d avg:%6d max:%6d\r",i,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);*/
                    //previous_time = current_time;
 
-                   //fprintf(posfile,"%d,%d,%d,%d,%d,%d,\n",i,act_cycle_time,*(UDINT *)(ec_slave[1].outputs+2),*(UDINT *)(ec_slave[1].inputs+2),*(UDINT *)(ec_slave[2].outputs+2),*(UDINT *)(ec_slave[2].inputs+2));
+                   //frt_printf(posfile,"%d,%d,%d,%d,%d,%d,\n",i,act_cycle_time,*(UDINT *)(ec_slave[1].outputs+2),*(UDINT *)(ec_slave[1].inputs+2),*(UDINT *)(ec_slave[2].outputs+2),*(UDINT *)(ec_slave[2].inputs+2));
                 }
                 inOP = FALSE;
             }
             else
             {
-              printf("Not all slaves reached operational state.\n");
+              rt_printf("Not all slaves reached operational state.\n");
               ec_readstate();
               for(i = 1; i<=ec_slavecount ; i++)
               {
                 if(ec_slave[i].state != EC_STATE_OPERATIONAL)
                 {
-                  printf("Slave %d State=0x%2.2x StatusCode=0x%4.4x : %s\n",
+                  rt_printf("Slave %d State=0x%2.2x StatusCode=0x%4.4x : %s\n",
                       i, ec_slave[i].state, ec_slave[i].ALstatuscode, ec_ALstatuscode2string(ec_slave[i].ALstatuscode));
                 }
               }
             }
-            printf("\nRequest init state for all slaves\n");
+            rt_printf("\nRequest init state for all slaves\n");
             ec_slave[0].state = EC_STATE_INIT;
             /* request INIT state for all slaves */
             ec_writestate(0);
         }
         else
         {
-          printf("No slaves found!\n");
+          rt_printf("No slaves found!\n");
         }
-        printf("End simple test, close socket\n");
+        rt_printf("End simple test, close socket\n");
         /* stop SOEM, close socket */
         ec_close();
     }
     else
     {
-      printf("No socket connection on %s\nExcecute as root\n",ifname);
+      rt_printf("No socket connection on %s\nExcecute as root\n",ifname);
     }
-}
-
-/* Server for talking to GUI Application */
-void controlserver(void *ptr) {
-
-  /* Automatic Motion Sequence */
-  int position_request = 300000000;
-  while (1) {
-     osal_usleep(900000);
-#ifdef _WIN32
-    WaitForSingleObject(IOmutex, INFINITE);
-#else
-    pthread_mutex_lock(&IOmutex);
-#endif
-     if (ycoe_csp_checkstatus(1, SW_CSP_TARGET_REACHED) &&
-          ycoe_csp_checkstatus(2, SW_CSP_TARGET_REACHED)) {
-        if (position_request > 0) position_request =0;
-        else position_request =300000000;
-        ycoe_csp_set_position(1, position_request);
-        ycoe_csp_set_position(2, position_request);
-        pos_cmd_sem[1]++;
-        pos_cmd_sem[2]++;
-      }
-#ifdef _WIN32
-    ReleaseMutex(IOmutex);
-#else
-    pthread_mutex_unlock(&IOmutex);
-#endif
-  }
-
-/* user buttons - semi-automatic motion sequence */
-  char buffer[15];
-	FILE * filepointer = fopen("/dev/ycoe", "r");
-	while (1) {
-    fread(buffer, sizeof(char) , 4, filepointer);
-
-#ifdef _WIN32
-    WaitForSingleObject(IOmutex, INFINITE);
-#else
-    pthread_mutex_lock(&IOmutex);
-#endif
-      if (buffer[2] == 4) {
-        //printf("Read data=%x\n\r",buffer[0]);
-          // Multi axis Command
-        USINT slaveaddr;
-        final_position = 1500000000;
-        for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
-          pos_cmd_sem[slaveaddr]++;
-          //printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
-        }
-      }
-      else if (buffer[2] == 8) {
-        //printf("Read data=%x\n\r",buffer[0]);
-        // Multi axis Command
-        USINT slaveaddr;
-        final_position = 0;
-        for (slaveaddr = 1; slaveaddr <= ec_slavecount; slaveaddr++) {
-          pos_cmd_sem[slaveaddr]++;
-          //printf("Slave %x Requested position:%d and pos_cmd_sem=%d\n\r",slaveaddr,*targetposition,pos_cmd_sem[slaveaddr]);
-        }
-      }
-
-#ifdef _WIN32
-    ReleaseMutex(IOmutex);
-#else
-    pthread_mutex_unlock(&IOmutex);
-#endif
-
-    osal_usleep(500000);
-  }
-  fclose(filepointer);
 }
 
 void catch_signal(int sig)
@@ -344,20 +255,6 @@ int main(int argc, char *argv[])
 
   mlockall(MCL_CURRENT | MCL_FUTURE);
 
-#ifdef _WIN32
-  IOmutex = CreateMutex(
-      NULL,              // default security attributes
-      FALSE,             // initially not owned
-      NULL);             // unnamed mutex
-  if (IOmutex == NULL)
-  {
-    printf("CreateMutex error: %d\n", GetLastError());
-    return 1;
-  }
-#else
-  //IOmutex = PTHREAD_MUTEX_INITALIZER;
-  pthread_mutex_init(&IOmutex, NULL);
-#endif
   printf("YaskawaCoE (Yaskawa Canopen over Ethercat Master)\nControl Application\n");
 
   if (argc > 1)
@@ -372,18 +269,14 @@ int main(int argc, char *argv[])
     rt_task_start(&engine_task, &coeController, NULL);
     //osal_thread_create_rt(&thread2, 128000, &coeController, argv[1]);
     //coeController(argv[1]);
-    controlserver(argv[1]);
+    while (run)
+      osal_usleep(300000);
   }
   else
   {
     printf("Usage: yaskawaCoE ifname1\nifname = eth0 for example\n");
   }
 
-#ifdef _WIN32
-  CloseHandle(IOmutex);
-#else
-  pthread_mutex_destroy(&IOmutex);
-#endif
   printf("End program\n");
   return (0);
 }
