@@ -45,6 +45,11 @@ volatile int wkc;
 boolean inOP;
 uint8 currentgroup = 0;
 
+float current_time, previous_time, diff_time,prev_print_time=0;
+float act_cycle_time;
+float min_cycle_time = 999999, max_cycle_time = 0, avg_cycle_time = 0, sum_cycle_time = 0;
+int cycle_count = 0;
+
 void coeController(void *arg)
 {
     char ifname[32]="wiznet";
@@ -52,12 +57,6 @@ void coeController(void *arg)
     int i, chk;
     inOP = FALSE;
     int islaveindex;
-    //DINT curr_position, prev_position = 0;
-    //DINT slave_velocity = 0;
-
-    //ec_timet current_time, previous_time, diff_time;
-    //unsigned int act_cycle_time;
-    //unsigned int min_cycle_time = 999999, max_cycle_time = 0, avg_cycle_time = 0, sum_cycle_time = 0;
 
 
     /* initialise SOEM, bind socket to ifname */
@@ -120,21 +119,19 @@ ycoe_csp_setup_posarray(2,500,5);
                 rt_printf("Operational state reached for all slaves.\n");
                 inOP = TRUE;
 
-                //previous_time = osal_current_time();
-
                 /* cyclic loop */
-				        i = 0;
+				        cycle_count = 0;
                 rt_task_sleep(1e6);
                 rt_task_set_periodic(NULL, TM_NOW, 1000000);//1ms
+                previous_time = rt_timer_read()/1000000.0;
 
-        				while(run)
+                while(run)
                 {
-                     rt_task_wait_period(NULL);   //wait for next cycle
+                    rt_task_wait_period(NULL);   //wait for next cycle
 
- 				          	i++;
+ 				          	cycle_count++;
 
                     for (islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
-                        //ycoe_printstatus(1);
 
                         if(ycoe_checkstatus(islaveindex,SW_SWITCHON_DISABLED))
                           ycoe_setcontrolword(islaveindex,CW_SHUTDOWN);
@@ -143,26 +140,8 @@ ycoe_csp_setup_posarray(2,500,5);
                         else if(ycoe_checkstatus(islaveindex,SW_SWITCHED_ON))
                         {
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
-                            //final_position = 1500000000;//81920;
-                            //ycoe_csp_set_position(islaveindex, 1500000000);
                             pos_cmd_sem[islaveindex] = 1;
                         }
-                        /*else {
-//                          if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
-                          if (ycoe_checkstatus(1,SW_OP_ENABLED) \
-                              && ycoe_checkstatus(2,SW_OP_ENABLED))
-                          {
-                             if (pos_cmd_sem[islaveindex] > 0) {
-                              // Add interpolation calculations
-                              //if (ycoe_csp_goto_position(islaveindex,final_position)) {
-                              if (ycoe_csp_goto_possync(islaveindex)) {
-                                pos_cmd_sem[islaveindex]=0;
-                              }
-                              //ycoe_csp_follow_posarray(islaveindex);
-                            }
-
-                          }
-                        }*/
                     }
 
                         if (ycoe_checkstatus(1,SW_OP_ENABLED) \
@@ -176,35 +155,19 @@ ycoe_csp_setup_posarray(2,500,5);
                     ec_send_processdata();
                     wkc = ec_receive_processdata(EC_TIMEOUTRET);
 
-                    if(wkc >= expectedWKC)
-                    {
-                      int usedbytes = 0;
-                      memcpy(guiIOmap, &ec_slavecount, 4);
-                      usedbytes = 4;
-                      for (islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
-                          memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Ibytes), 4);
-                          usedbytes += 4;
-                          memcpy(guiIOmap+usedbytes,&(ec_slave[islaveindex].Obytes), 4);
-                          usedbytes += 4;
-                          memcpy(guiIOmap+usedbytes,ec_slave[islaveindex].inputs, ec_slave[islaveindex].Ibytes);
-                          usedbytes += ec_slave[islaveindex].Ibytes;
-                          memcpy(guiIOmap+usedbytes,ec_slave[islaveindex].outputs, ec_slave[islaveindex].Obytes);
-                          usedbytes += ec_slave[islaveindex].Obytes;
-                      }
-                      guiIObytes = usedbytes;
-                   }
-
-                   //current_time = osal_current_time();
-                   //osal_time_diff(&previous_time,&current_time,&diff_time);
-                   //act_cycle_time = diff_time.usec;
-                   /*if (act_cycle_time < min_cycle_time) min_cycle_time = act_cycle_time;
+                   current_time = rt_timer_read()/1000000.0;
+                   diff_time = current_time - previous_time;
+                   act_cycle_time = diff_time;
+                   if (act_cycle_time < min_cycle_time) min_cycle_time = act_cycle_time;
                    if (act_cycle_time > max_cycle_time) max_cycle_time = act_cycle_time;
                    sum_cycle_time += act_cycle_time;
-                   avg_cycle_time = (int) (((float)sum_cycle_time)/((float)i));
-                   rt_printf("cycle:%d act:%6d min:%6d avg:%6d max:%6d\r",i,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);*/
-                   //previous_time = current_time;
-
-                   //frt_printf(posfile,"%d,%d,%d,%d,%d,%d,\n",i,act_cycle_time,*(UDINT *)(ec_slave[1].outputs+2),*(UDINT *)(ec_slave[1].inputs+2),*(UDINT *)(ec_slave[2].outputs+2),*(UDINT *)(ec_slave[2].inputs+2));
+                   avg_cycle_time = sum_cycle_time/((float)cycle_count);
+                   //if (cycle_count % 100 == 0)
+                   if (current_time > prev_print_time + 100) {
+                     rt_printf("cycle:%d time:%.5f act:%.5f min:%.5f avg:%.5f max:%.5f\r",cycle_count,current_time,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);
+                      prev_print_time = current_time;
+                   }
+                   previous_time = current_time;
                 }
                 inOP = FALSE;
             }
@@ -260,15 +223,9 @@ int main(int argc, char *argv[])
   if (argc > 1)
   {
     /* create thread to handle slave error handling in OP */
-    //      pthread_create( &thread1, NULL, (void *) &ecatcheck, (void*) &ctime);
-    //osal_thread_create(&thread1, 128000, &ecatcheck, (void*) &ctime);
-    // thread to handle gui application requests
-    //osal_thread_create(&thread2, 128000, &controlserver, (void*)&ctime);
     /* start cyclic part */
-    rt_task_create(&engine_task, "ycoe_engine", 0, 90, 0 );
+    rt_task_create(&engine_task, "ycoe_engine", 0, 69, 0 );
     rt_task_start(&engine_task, &coeController, NULL);
-    //osal_thread_create_rt(&thread2, 128000, &coeController, argv[1]);
-    //coeController(argv[1]);
     while (run)
       osal_usleep(300000);
   }
