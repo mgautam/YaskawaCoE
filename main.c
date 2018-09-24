@@ -30,6 +30,7 @@
 #endif
 
 #define EC_TIMEOUTMON 500
+#define ECAT_CYCLE_PERIOD 1000000
 
 RT_TASK engine_task;
 int run=1;
@@ -46,8 +47,8 @@ boolean inOP;
 uint8 currentgroup = 0;
 
 float current_time, previous_time, diff_time,prev_print_time=0;
-float act_cycle_time;
-float min_cycle_time = 999999, max_cycle_time = 0, avg_cycle_time = 0, sum_cycle_time = 0;
+float act_cycle_time,min_cycle_time = 999999, max_cycle_time = 0, sum_cycle_time = 0, avg_cycle_time = 0;
+float act_latency,min_latency = 999999, max_latency = 0, sum_latency = 0, avg_latency = 0;
 int cycle_count = 0;
 
 void coeController(void *arg)
@@ -122,7 +123,7 @@ ycoe_csp_setup_posarray(2,500,5);
                 /* cyclic loop */
 				        cycle_count = 0;
                 rt_task_sleep(1e6);
-                rt_task_set_periodic(NULL, TM_NOW, 1000000);//1ms
+                rt_task_set_periodic(NULL, TM_NOW, ECAT_CYCLE_PERIOD);//1ms
                 previous_time = rt_timer_read()/1000000.0;
 
                 while(run)
@@ -161,12 +162,28 @@ ycoe_csp_setup_posarray(2,500,5);
                    if (act_cycle_time < min_cycle_time) min_cycle_time = act_cycle_time;
                    if (act_cycle_time > max_cycle_time) max_cycle_time = act_cycle_time;
                    sum_cycle_time += act_cycle_time;
-                   avg_cycle_time = sum_cycle_time/((float)cycle_count);
+
+                   //act_latency = diff_time - prev_diff_time;
+                   act_latency = diff_time - (ECAT_CYCLE_PERIOD/1000000.0);
+                   //if (act_latency < 0) act_latency = -act_latency;
+                   if (act_latency < min_latency) min_latency = act_latency;
+                   if (act_latency > max_latency) max_latency = act_latency;
+                   if (act_latency < 0) act_latency = -act_latency;
+                   sum_latency += act_latency;
+
                    //if (cycle_count % 100 == 0)
                    if (current_time > prev_print_time + 100) {
-                     rt_printf("cycle:%d time:%.5f act:%.5f min:%.5f avg:%.5f max:%.5f\r",cycle_count,current_time,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);
+                      avg_cycle_time = sum_cycle_time/((float)cycle_count);
+                      avg_latency = sum_latency/((float)cycle_count);
+                      rt_printf("cycle:%d time:%.5f act:%.5f min:%.5f avg:%.5f max:%.5f\n\r",cycle_count,current_time,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);
+                      rt_printf("lcycle:%d time:%.5f act:%.5f min:%.5f avg:%.5f max:%.5f\r\n",cycle_count,current_time,act_latency,min_latency,avg_latency,max_latency);
                       prev_print_time = current_time;
+                      min_cycle_time=999999, max_cycle_time = 0;
+                      min_latency=999999, max_latency = 0;
+                      sum_cycle_time = 0, sum_latency = 0;
+                      cycle_count = 0;
                    }
+                   //prev_diff_time = diff_time;
                    previous_time = current_time;
                 }
                 inOP = FALSE;
@@ -224,7 +241,7 @@ int main(int argc, char *argv[])
   {
     /* create thread to handle slave error handling in OP */
     /* start cyclic part */
-    rt_task_create(&engine_task, "ycoe_engine", 0, 69, 0 );
+    rt_task_create(&engine_task, "ycoe_engine", 0, 99, 0 );
     rt_task_start(&engine_task, &coeController, NULL);
     while (run)
       osal_usleep(300000);
