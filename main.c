@@ -103,7 +103,7 @@ ycoe_csp_setup_posarray(2,500,5);
             ec_slave[0].state = EC_STATE_OPERATIONAL;
             /* send one valid process data to make outputs in slaves happy*/
             ec_send_processdata();
-            ec_receive_processdata(EC_TIMEOUTRET);
+            ec_receive_processdata(100);//(EC_TIMEOUTRET);
             /* request OP state for all slaves */
             ec_writestate(0);
             chk = 40;
@@ -111,7 +111,7 @@ ycoe_csp_setup_posarray(2,500,5);
             do
             {
                 ec_send_processdata();
-                ec_receive_processdata(EC_TIMEOUTRET);
+                ec_receive_processdata(100);//(EC_TIMEOUTRET);
                 ec_statecheck(0, EC_STATE_OPERATIONAL, 50000);
             } while (chk-- && (ec_slave[0].state != EC_STATE_OPERATIONAL));
 
@@ -154,7 +154,7 @@ ycoe_csp_setup_posarray(2,500,5);
 
 
                     ec_send_processdata();
-                    wkc = ec_receive_processdata(EC_TIMEOUTRET);
+                    wkc = ec_receive_processdata(100);//(EC_TIMEOUTRET);
 
                    current_time = rt_timer_read()/1000000.0;
                    diff_time = current_time - previous_time;
@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
   {
     /* create thread to handle slave error handling in OP */
     /* start cyclic part */
-    rt_task_create(&engine_task, "ycoe_engine", 0, 99, 0 );
+    rt_task_create(&engine_task, "ycoe_engine", 0, 90, 0 );
     rt_task_start(&engine_task, &coeController, NULL);
     while (run)
       osal_usleep(300000);
