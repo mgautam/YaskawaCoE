@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
   {
     /* create thread to handle slave error handling in OP */
     /* start cyclic part */
-    rt_task_create(&engine_task, "ycoe_engine", 0, 90, 0 );
+    rt_task_create(&engine_task, "ycoe_engine", 0, 99, 0 );
     rt_task_start(&engine_task, &coeController, NULL);
     while (run)
       osal_usleep(300000);
