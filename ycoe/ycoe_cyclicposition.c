@@ -243,19 +243,22 @@ int ycoe_csp_setup_posarray(int num_slaves, unsigned int samples_per_second, uns
   for (i=1; i<=num_slaves; i++)
     position_array[i] = (DINT *) malloc(sizeof(DINT) * period_in_cycles);
 
+  DINT *cur_slave1_pos = (DINT *)(ec_slave[1].inputs+2);
+  DINT *cur_slave2_pos = (DINT *)(ec_slave[2].inputs+2);
+
   // Circular Interpolation
-  sinfill(position_array[1], 6400000.0, period_in_cycles);//6400000=100000counts/s
-  sinfill(position_array[2], 6400000.0, period_in_cycles);// 800000=12500counts/s
+  sinfill(position_array[1], *cur_slave1_pos, 6400000.0, period_in_cycles);//6400000=100000counts/s
+  sinfill(position_array[2], *cur_slave2_pos, 6400000.0, period_in_cycles);// 800000=12500counts/s
 
   // Other graphs can be used to fill these position arrays
-  // The two arrays have to be equal in size 
+  // The two arrays have to be equal in size
   // also keep in mind the max velocities and accelerations
 
   return 0;
 }
 int ycoe_csp_follow_posarray (int slavenum) {
-    DINT *current_position_pdo1 = (DINT *)(ec_slave[1].inputs+2);
-    DINT *current_position_pdo2 = (DINT *)(ec_slave[2].inputs+2);
+    /*DINT *current_position_pdo1 = (DINT *)(ec_slave[1].inputs+2);
+    DINT *current_position_pdo2 = (DINT *)(ec_slave[2].inputs+2);*/
 
     DINT tolerance = 10;//counts
 

@@ -5,8 +5,8 @@
 #include "ycoetype.h"
 
 
-int sinfill(DINT *array, double radius, unsigned int num_samples);
-int cosfill(DINT *array, double radius, unsigned int num_samples);
+int sinfill(DINT *array, DINT origin, double radius, unsigned int num_samples);
+int cosfill(DINT *array, DINT origin, double radius, unsigned int num_samples);
 
 
 #endif

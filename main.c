@@ -84,7 +84,7 @@ void coeController(void *arg)
                 ycoe_csp_set_parameters(islaveindex,0,0,1048576,1048576);
                 //ycoe_csp_get_parameters(islaveindex);
             }
-ycoe_csp_setup_posarray(2,500,5);
+//ycoe_csp_setup_posarray(2,500,5);
 
             /*
                ec_config_map reads PDO mapping and set local buffer for PDO exchange.
@@ -120,6 +120,7 @@ ycoe_csp_setup_posarray(2,500,5);
                 rt_printf("Operational state reached for all slaves.\n");
                 inOP = TRUE;
 
+ycoe_csp_setup_posarray(2,500,5);
                 /* cyclic loop */
 				        cycle_count = 0;
                 rt_task_sleep(1e6);
