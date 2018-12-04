@@ -19,7 +19,7 @@ int ycoe_csp_setup(int slavenum) {
     //printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
 
     /* Enable DC Mode with Sync0 Generation */
-    ec_dcsync0(slavenum,1,4000000,0);//CycleTime=4ms, CycleShift=0
+    ec_dcsync0(slavenum,1,1000000,0);//CycleTime=4ms, CycleShift=0
     //printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
     return 0;
 }

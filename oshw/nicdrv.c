@@ -123,6 +123,8 @@ int ecx_setupnic(ecx_portt *port, const char *ifname, int secondary)
 //   port->tx_mutex = mtx_create();
 //   port->rx_mutex = mtx_create();
 
+   wiznet_hw_config(8,0,1000000);//new driver addition
+
    rVal = wiznet_macraw_init((uint8_t *)priMAC);
    if (rVal != 0)
       return 0;

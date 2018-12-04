@@ -33,7 +33,6 @@
 #include <rtdm/testing.h>
 #include <boilerplate/trace.h>
 #include <xenomai/init.h>
-#include <cobalt/stdio.h>		//The rdtk real-time printing library
 
 #ifndef USECS_PER_SEC
 #define USECS_PER_SEC     1000000
