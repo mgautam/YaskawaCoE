@@ -27,6 +27,10 @@ int ycoe_csp_goto_position (int slavenum, DINT target_position);
 int ycoe_csp_set_position (int slavenum, DINT final_position);
 int ycoe_csp_goto_possync (int slavenum);
 
-int ycoe_csp_setup_posarray(int num_slaves, unsigned int samples_per_second, unsigned int period_in_secs);
-int ycoe_csp_follow_posarray (int slavenum);
+int ycoe_csp_setup_posarray(int num_slaves, unsigned int array_length);
+int ycoe_csp_fill_posarray (int num_slaves, DINT *pos_array);
+int ycoe_csp_follow_posarray (int num_slaves);
+
+int ycoe_csp_setup_sinarray(int num_slaves, unsigned int samples_per_second, unsigned int period_in_secs);
+int ycoe_csp_loop_posarray (int slavenum);
 #endif

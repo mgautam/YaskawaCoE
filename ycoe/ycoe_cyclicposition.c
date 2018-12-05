@@ -234,14 +234,42 @@ static DINT **position_array;
 //extern unsigned int period_in_cycles;
 static unsigned int period_in_cycles = 0;
 static int position_index = 0;
-static DINT start_position[3] = {0};
-int ycoe_csp_setup_posarray(int num_slaves, unsigned int samples_per_second, unsigned int period_in_secs) {
-  position_array = malloc((num_slaves+1) * sizeof(DINT *));
+int ycoe_csp_setup_posarray(int num_slaves, unsigned int array_length) {
+    position_array = malloc((num_slaves+1) * sizeof(DINT *));
+    period_in_cycles = array_length;
+    for (int i=1; i<=num_slaves; i++) {
+      position_array[i] = (DINT *) malloc(sizeof(DINT) * array_length);
+    }
+}
+int ycoe_csp_fill_posarray (int num_slaves, DINT *pos_array) {
 
+    for (int i=1; i<=num_slaves; i++) {
+      DINT *cur_slave_pos = (DINT *)(ec_slave[i].inputs+2);
+      for (int j=0; j<period_in_cycles; j++)
+        position_array[i][j]=*cur_slave_pos + pos_array[(i-1)*period_in_cycles+j];
+    }
+
+    // Reset Position Index for Follow_PosArray
+    position_index = 0;
+}
+int ycoe_csp_follow_posarray (int num_slaves) {
+
+    if (position_index < period_in_cycles) {
+      position_index++;
+
+      for (int i=1; i<=num_slaves; i++) {
+        DINT *target_position_pdo = (DINT *)(ec_slave[i].outputs+2);
+        *target_position_pdo = position_array[i][position_index];
+      }
+    }
+
+    return 0;
+}
+
+
+int ycoe_csp_setup_sinarray(int num_slaves, unsigned int samples_per_second, unsigned int period_in_secs) {
   period_in_cycles = samples_per_second * period_in_secs;
-  int i;
-  for (i=1; i<=num_slaves; i++)
-    position_array[i] = (DINT *) malloc(sizeof(DINT) * period_in_cycles);
+  ycoe_csp_setup_posarray(num_slaves, period_in_cycles);
 
   DINT *cur_slave1_pos = (DINT *)(ec_slave[1].inputs+2);
   DINT *cur_slave2_pos = (DINT *)(ec_slave[2].inputs+2);
@@ -256,21 +284,10 @@ int ycoe_csp_setup_posarray(int num_slaves, unsigned int samples_per_second, uns
 
   return 0;
 }
-int ycoe_csp_follow_posarray (int slavenum) {
-    /*DINT *current_position_pdo1 = (DINT *)(ec_slave[1].inputs+2);
-    DINT *current_position_pdo2 = (DINT *)(ec_slave[2].inputs+2);*/
+int ycoe_csp_loop_posarray (int slavenum) {
 
-    DINT tolerance = 10;//counts
-
-    // Sync both axes with the position array
-    /*if (((((*current_position_pdo1 - position_array[1][position_index]) < tolerance) && (*current_position_pdo1 > position_array[1][position_index])) ||
-         (((*current_position_pdo1 - position_array[1][position_index]) > -tolerance) && (*current_position_pdo1 < position_array[1][position_index]))) &&
-        ((((*current_position_pdo2 - position_array[2][position_index]) < tolerance) && (*current_position_pdo2 > position_array[2][position_index])) ||
-         (((*current_position_pdo2 - position_array[2][position_index]) > -tolerance) && (*current_position_pdo2 < position_array[2][position_index]))))*/
-    {
-      position_index++;
-      if (position_index >= period_in_cycles) position_index = 0;
-    }
+    position_index++;
+    if (position_index >= period_in_cycles) position_index = 0;
 
     DINT *target_position_pdo1 = (DINT *)(ec_slave[1].outputs+2);
     *target_position_pdo1 = position_array[1][position_index];
@@ -280,3 +297,5 @@ int ycoe_csp_follow_posarray (int slavenum) {
 
     return 0;
 }
+
+

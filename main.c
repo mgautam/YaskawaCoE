@@ -25,9 +25,12 @@
 #include "ethercat.h"
 #include "yaskawacoe.h"
 
-#ifndef _WIN32
+
 #include <pthread.h>
-#endif
+#include <mqueue.h>
+#define IN_QUEUE  "/ycoe_inbound"
+#define MAX_SIZE    1024
+
 
 #define EC_TIMEOUTMON 500
 #define ECAT_CYCLE_PERIOD 1000000
@@ -120,7 +123,7 @@ void coeController(void *arg)
                 rt_printf("Operational state reached for all slaves.\n");
                 inOP = TRUE;
 
-ycoe_csp_setup_posarray(2,500,5);
+ycoe_csp_setup_sinarray(2,500,5);
                 /* cyclic loop */
 				        cycle_count = 0;
                 rt_task_sleep(1e6);
@@ -150,7 +153,7 @@ ycoe_csp_setup_posarray(2,500,5);
                               && ycoe_checkstatus(2,SW_OP_ENABLED))
                           {
                               // Add interpolation calculations
-                              ycoe_csp_follow_posarray(islaveindex);
+                              ycoe_csp_loop_posarray(islaveindex);
                           }
 
 
