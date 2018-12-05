@@ -19,7 +19,7 @@ int ycoe_csp_setup(int slavenum) {
     //printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
 
     /* Enable DC Mode with Sync0 Generation */
-    ec_dcsync0(slavenum,1,1000000,0);//CycleTime=4ms, CycleShift=0
+    ec_dcsync0(slavenum,1,4000000,0);//CycleTime=4ms, CycleShift=0
     //printf("Slave:%d CoE State: %x\n\r",slavenum,ycoe_readreg_int(slavenum, 0x130));
     return 0;
 }
@@ -237,15 +237,17 @@ static int position_index = 0;
 int ycoe_csp_setup_posarray(int num_slaves, unsigned int array_length) {
     position_array = malloc((num_slaves+1) * sizeof(DINT *));
     period_in_cycles = array_length;
-    for (int i=1; i<=num_slaves; i++) {
+    int i;
+    for (i=1; i<=num_slaves; i++) {
       position_array[i] = (DINT *) malloc(sizeof(DINT) * array_length);
     }
 }
 int ycoe_csp_fill_posarray (int num_slaves, DINT *pos_array) {
-
-    for (int i=1; i<=num_slaves; i++) {
+    int i;
+    for (i=1; i<=num_slaves; i++) {
       DINT *cur_slave_pos = (DINT *)(ec_slave[i].inputs+2);
-      for (int j=0; j<period_in_cycles; j++)
+      int j;
+      for (j=0; j<period_in_cycles; j++)
         position_array[i][j]=*cur_slave_pos + pos_array[(i-1)*period_in_cycles+j];
     }
 
@@ -257,7 +259,8 @@ int ycoe_csp_follow_posarray (int num_slaves) {
     if (position_index < period_in_cycles) {
       position_index++;
 
-      for (int i=1; i<=num_slaves; i++) {
+      int i;
+      for (i=1; i<=num_slaves; i++) {
         DINT *target_position_pdo = (DINT *)(ec_slave[i].outputs+2);
         *target_position_pdo = position_array[i][position_index];
       }
@@ -275,9 +278,11 @@ int ycoe_csp_setup_sinarray(int num_slaves, unsigned int samples_per_second, uns
   DINT *cur_slave2_pos = (DINT *)(ec_slave[2].inputs+2);
 
   // Circular Interpolation
-  sinfill(position_array[1], *cur_slave1_pos, 6400000.0, period_in_cycles);//6400000=100000counts/s
-  sinfill(position_array[2], *cur_slave2_pos, 6400000.0, period_in_cycles);// 800000=12500counts/s
-
+  DINT *_pos_arr = malloc(num_slaves*sizeof(DINT)*period_in_cycles);
+  sinfill(_pos_arr, 0, 6400000.0, period_in_cycles);//6400000=100000counts/s
+  sinfill(_pos_arr+period_in_cycles, 0, 6400000.0, period_in_cycles);// 800000=12500counts/s
+  ycoe_csp_fill_posarray (num_slaves, _pos_arr);
+  free(_pos_arr);
   // Other graphs can be used to fill these position arrays
   // The two arrays have to be equal in size
   // also keep in mind the max velocities and accelerations

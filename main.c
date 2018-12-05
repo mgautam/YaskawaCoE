@@ -153,7 +153,8 @@ ycoe_csp_setup_sinarray(2,500,5);
                               && ycoe_checkstatus(2,SW_OP_ENABLED))
                           {
                               // Add interpolation calculations
-                              ycoe_csp_loop_posarray(islaveindex);
+                              //ycoe_csp_loop_posarray(islaveindex);
+                              ycoe_csp_follow_posarray(2);
                           }
 
 
