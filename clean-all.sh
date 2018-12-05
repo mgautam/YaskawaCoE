@@ -1,4 +1,8 @@
-cd osal
+cd libsodium-1.0.3
+make clean
+cd ../zeromq-4.1.3
+make clean
+cd ../osal
 make clean
 cd ../oshw
 make clean
