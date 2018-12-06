@@ -26,6 +26,8 @@
 #include "yaskawacoe.h"
 #include "ycoe_math.h"
 
+// Unistd.h only for sleep
+#include <unistd.h>
 #include <pthread.h>
 #include <mqueue.h>
 #define IN_QUEUE  "/ycoe_inbound"
@@ -261,10 +263,12 @@ void *mediator(void *args) {
   while (1) {
     //ycoe_csp_fill_posarray (num_slaves, _pos_arr);
     mq_send(mq, (char *)_pos_arr, 2*MAX_POSARR_LEN*sizeof(DINT), 0);
-    osal_usleep(3000000);// Sleep 3 seconds
+    sleep(3);// Sleep 3 seconds
   }
   free(_pos_arr);
   mq_close(mq);
+
+  return NULL;
 }
 
 
