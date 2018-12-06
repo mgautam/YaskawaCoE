@@ -32,7 +32,7 @@
 #include <mqueue.h>
 #define IN_QUEUE  "/ycoe_inbound"
 #define MAX_POSARR_LEN    2500
-
+#include <zmq.h>
 
 #define EC_TIMEOUTMON 500
 #define ECAT_CYCLE_PERIOD 1000000
@@ -256,23 +256,20 @@ void *mediator(void *args) {
   /* open the mail queue */
   mq = mq_open(IN_QUEUE, O_WRONLY);
 
-  DINT *_sin_pos_arr = malloc(2*MAX_POSARR_LEN*sizeof(DINT));
-  sinfill(_sin_pos_arr, 0, 6400000.0, MAX_POSARR_LEN);//6400000=100000counts/s
-  sinfill(_sin_pos_arr+MAX_POSARR_LEN, 0, 6400000.0, MAX_POSARR_LEN);// 800000=12500counts/s
+  //  Socket to talk to clients
+  void *context = zmq_ctx_new();
+  void *responder = zmq_socket(context, ZMQ_REP);
+  int rc = zmq_bind(responder, "tcp://*:5555");
 
-  DINT *_tri_pos_arr = malloc(2*MAX_POSARR_LEN*sizeof(DINT));
-  trifill(_tri_pos_arr, 0, 6400000.0, MAX_POSARR_LEN);//6400000=100000counts/s
-  trifill(_tri_pos_arr+MAX_POSARR_LEN, 0, 6400000.0, MAX_POSARR_LEN);// 800000=12500counts/s
-
+  DINT _pos_arr[2*MAX_POSARR_LEN]={0};
   while (1) {
-    //ycoe_csp_fill_posarray (num_slaves, _pos_arr);
-    mq_send(mq, (char *)_sin_pos_arr, 2*MAX_POSARR_LEN*sizeof(DINT), 0);
-    sleep(3);// Sleep 3 seconds
-    mq_send(mq, (char *)_tri_pos_arr, 2*MAX_POSARR_LEN*sizeof(DINT), 0);
-    sleep(3);// Sleep 3 seconds
+    zmq_recv(responder, (char *)_pos_arr, 2*MAX_POSARR_LEN*sizeof(DINT), 0);
+    mq_send(mq, (char *)_pos_arr, 2*MAX_POSARR_LEN*sizeof(DINT), 0);
+    printf("Zmq msg Received & Sent!");
+    zmq_send(responder, _pos_arr, 12, 0);
   }
-  free(_sin_pos_arr);
-  free(_tri_pos_arr);
+  zmq_close(requester);
+  zmq_ctx_destroy(context);
   mq_close(mq);
 
   return NULL;
@@ -305,8 +302,34 @@ int main(int argc, char *argv[])
 
     pthread_t thread1;
     pthread_create(&thread1, NULL, mediator, argv[1]);
+
+    void *context = zmq_ctx_new ();
+    void *requester = zmq_socket (context, ZMQ_REQ);
+    zmq_connect (requester, "tcp://localhost:5555");
+    DINT *_sin_pos_arr = malloc(2*MAX_POSARR_LEN*sizeof(DINT));
+    sinfill(_sin_pos_arr, 0, 6400000.0, MAX_POSARR_LEN);//6400000=100000counts/s
+    sinfill(_sin_pos_arr+MAX_POSARR_LEN, 0, 6400000.0, MAX_POSARR_LEN);// 800000=12500counts/s
+
+    DINT *_tri_pos_arr = malloc(2*MAX_POSARR_LEN*sizeof(DINT));
+    trifill(_tri_pos_arr, 0, 6400000.0, MAX_POSARR_LEN);//6400000=100000counts/s
+    trifill(_tri_pos_arr+MAX_POSARR_LEN, 0, 6400000.0, MAX_POSARR_LEN);// 800000=12500counts/s
+
+    char buffer[12] = {0};
     while (run)
-      osal_usleep(300000);
+    {
+      zmq_send(requester, (char *)_sin_pos_arr, 2*MAX_POSARR_LEN*sizeof(DINT), 0);
+      zmq_recv(requester,buffer,12,0);
+      sleep(3);// Sleep 3 seconds
+      zmq_send(requester, (char *)_tri_pos_arr, 2*MAX_POSARR_LEN*sizeof(DINT), 0);
+      zmq_recv(requester,buffer,12,0);
+      sleep(3);// Sleep 3 seconds*/
+      //osal_usleep(300000);
+    }
+    free(_sin_pos_arr);
+    free(_tri_pos_arr);
+
+    zmq_close(requester);
+    zmq_ctx_destroy(context);
   }
   else
   {
