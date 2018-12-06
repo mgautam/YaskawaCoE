@@ -24,12 +24,12 @@
 
 #include "ethercat.h"
 #include "yaskawacoe.h"
-
+#include "ycoe_math.h"
 
 #include <pthread.h>
 #include <mqueue.h>
 #define IN_QUEUE  "/ycoe_inbound"
-#define MAX_SIZE    1024
+#define MAX_POSARR_LEN    2500
 
 
 #define EC_TIMEOUTMON 500
@@ -61,6 +61,20 @@ void coeController(void *arg)
     int i, chk;
     inOP = FALSE;
     int islaveindex;
+
+    mqd_t mq;
+    ssize_t mq_bytes_read;
+    struct mq_attr mqattr;
+    char pos_buffer[MAX_POSARR_LEN*sizeof(DINT)*2];
+
+    /* initialize the queue attributes */
+    mqattr.mq_flags = 0;
+    mqattr.mq_maxmsg = 10;
+    mqattr.mq_msgsize = MAX_POSARR_LEN*sizeof(DINT)*2;
+    mqattr.mq_curmsgs = 0;
+
+    /* create the message queue */
+    mq = mq_open(IN_QUEUE, O_CREAT | O_RDONLY | O_NONBLOCK, 0644, &mqattr);
 
 
     /* initialise SOEM, bind socket to ifname */
@@ -123,7 +137,7 @@ void coeController(void *arg)
                 rt_printf("Operational state reached for all slaves.\n");
                 inOP = TRUE;
 
-ycoe_csp_setup_sinarray(2,500,5);
+ycoe_csp_setup_posarray(2,MAX_POSARR_LEN);
                 /* cyclic loop */
 				        cycle_count = 0;
                 rt_task_sleep(1e6);
@@ -135,6 +149,13 @@ ycoe_csp_setup_sinarray(2,500,5);
                     rt_task_wait_period(NULL);   //wait for next cycle
 
  				          	cycle_count++;
+
+                    memset(pos_buffer, 0x00, sizeof(pos_buffer));
+                    mq_bytes_read = mq_receive(mq, pos_buffer, 2*MAX_POSARR_LEN*sizeof(DINT), NULL);
+                    if(mq_bytes_read >= 0) {
+                        printf("SERVER: Received bytes = %d\n", (int)mq_bytes_read);
+                        ycoe_csp_fill_posarray (2, MAX_POSARR_LEN, (DINT *)pos_buffer);
+                    }
 
                     for (islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
 
@@ -218,12 +239,34 @@ ycoe_csp_setup_sinarray(2,500,5);
         rt_printf("End simple test, close socket\n");
         /* stop SOEM, close socket */
         ec_close();
+        /* mq cleanup */
+        mq_close(mq);
+        mq_unlink(IN_QUEUE);
     }
     else
     {
       rt_printf("No socket connection on %s\nExcecute as root\n",ifname);
     }
 }
+
+void *mediator(void *args) {
+  mqd_t mq;
+  /* open the mail queue */
+  mq = mq_open(IN_QUEUE, O_WRONLY);
+
+  DINT *_pos_arr = malloc(2*MAX_POSARR_LEN*sizeof(DINT));
+  sinfill(_pos_arr, 0, 6400000.0, MAX_POSARR_LEN);//6400000=100000counts/s
+  sinfill(_pos_arr+MAX_POSARR_LEN, 0, 6400000.0, MAX_POSARR_LEN);// 800000=12500counts/s
+
+  while (1) {
+    //ycoe_csp_fill_posarray (num_slaves, _pos_arr);
+    mq_send(mq, (char *)_pos_arr, 2*MAX_POSARR_LEN*sizeof(DINT), 0);
+    osal_usleep(3000000);// Sleep 3 seconds
+  }
+  free(_pos_arr);
+  mq_close(mq);
+}
+
 
 void catch_signal(int sig)
 {
@@ -248,6 +291,9 @@ int main(int argc, char *argv[])
     /* start cyclic part */
     rt_task_create(&engine_task, "ycoe_engine", 0, 99, 0 );
     rt_task_start(&engine_task, &coeController, NULL);
+
+    pthread_t thread1;
+    pthread_create(&thread1, NULL, mediator, argv[1]);
     while (run)
       osal_usleep(300000);
   }

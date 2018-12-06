@@ -233,17 +233,17 @@ int ycoe_csp_goto_possync (int slavenum) {
 static DINT **position_array;
 //extern unsigned int period_in_cycles;
 static unsigned int period_in_cycles = 0;
-static int position_index = 0;
-int ycoe_csp_setup_posarray(int num_slaves, unsigned int array_length) {
+static int position_index = -1;
+int ycoe_csp_setup_posarray(int num_slaves, unsigned int max_array_len) {
     position_array = malloc((num_slaves+1) * sizeof(DINT *));
-    period_in_cycles = array_length;
     int i;
     for (i=1; i<=num_slaves; i++) {
-      position_array[i] = (DINT *) malloc(sizeof(DINT) * array_length);
+      position_array[i] = (DINT *) malloc(sizeof(DINT) * max_array_len);
     }
 }
-int ycoe_csp_fill_posarray (int num_slaves, DINT *pos_array) {
+int ycoe_csp_fill_posarray (int num_slaves, int posarr_len, DINT *pos_array) {
     int i;
+    period_in_cycles = posarr_len;
     for (i=1; i<=num_slaves; i++) {
       DINT *cur_slave_pos = (DINT *)(ec_slave[i].inputs+2);
       int j;
@@ -256,14 +256,16 @@ int ycoe_csp_fill_posarray (int num_slaves, DINT *pos_array) {
 }
 int ycoe_csp_follow_posarray (int num_slaves) {
 
-    if (position_index < period_in_cycles) {
-      position_index++;
+    if (position_index >= 0) {
+      if (position_index < period_in_cycles) {
+        position_index++;
 
-      int i;
-      for (i=1; i<=num_slaves; i++) {
-        DINT *target_position_pdo = (DINT *)(ec_slave[i].outputs+2);
-        *target_position_pdo = position_array[i][position_index];
-      }
+        int i;
+        for (i=1; i<=num_slaves; i++) {
+          DINT *target_position_pdo = (DINT *)(ec_slave[i].outputs+2);
+          *target_position_pdo = position_array[i][position_index];
+        }
+      } else position_index = -1;
     }
 
     return 0;
@@ -281,12 +283,13 @@ int ycoe_csp_setup_sinarray(int num_slaves, unsigned int samples_per_second, uns
   DINT *_pos_arr = malloc(num_slaves*sizeof(DINT)*period_in_cycles);
   sinfill(_pos_arr, 0, 6400000.0, period_in_cycles);//6400000=100000counts/s
   sinfill(_pos_arr+period_in_cycles, 0, 6400000.0, period_in_cycles);// 800000=12500counts/s
-  ycoe_csp_fill_posarray (num_slaves, _pos_arr);
+  ycoe_csp_fill_posarray (num_slaves, period_in_cycles, _pos_arr);
   free(_pos_arr);
   // Other graphs can be used to fill these position arrays
   // The two arrays have to be equal in size
   // also keep in mind the max velocities and accelerations
 
+  position_index = 0;
   return 0;
 }
 int ycoe_csp_loop_posarray (int slavenum) {
