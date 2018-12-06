@@ -1,13 +1,4 @@
-cd libsodium-1.0.3
-./configure
-make
-#sudo make install
-cd ../zeromq-4.1.3
-./configure
-make
-#sudo make install
-#sudo ldconfig
-cd ../osal
+cd osal
 make
 cd ../oshw
 make
@@ -17,3 +8,4 @@ cd ../ycoe
 make
 cd ..
 make
+gcc zmqsend.c -I./ycoe -I./soem -I./osal -lzmq ./ycoe/ycoe_math.o -lm
