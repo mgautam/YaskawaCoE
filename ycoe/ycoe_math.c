@@ -30,3 +30,26 @@ int cosfill(DINT *array, DINT origin, double radius, unsigned int num_samples) {
     }
     return 0;
 }
+
+int trifill(DINT *array, DINT origin, double height, unsigned int num_samples) {
+    /* Max num_samples is 65535 */
+    //array = (DINT *) malloc(sizeof(UDINT) * num_samples);
+
+    double slope = ((double) (height*2)) / (double)num_samples;
+
+    int i;
+    for (i=0; i<num_samples/2; i++) {
+      array[i] = origin + (DINT) (slope * (double)i);
+      if (i < 15) printf("%d->%d ",i,array[i]);
+    }
+    for (i=num_samples/2; i<num_samples; i++) {
+      array[i] = origin + (DINT) (slope * (double)(num_samples-i));
+      //if (i < 15) printf("%d->%d ",i,array[i]);
+    }
+
+
+    printf("Trifill: %d\n",num_samples);
+    return 0;
+}
+
+

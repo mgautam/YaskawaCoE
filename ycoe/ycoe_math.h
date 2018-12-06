@@ -8,5 +8,6 @@
 int sinfill(DINT *array, DINT origin, double radius, unsigned int num_samples);
 int cosfill(DINT *array, DINT origin, double radius, unsigned int num_samples);
 
+int trifill(DINT *array, DINT origin, double height, unsigned int num_samples);
 
 #endif

@@ -256,16 +256,23 @@ void *mediator(void *args) {
   /* open the mail queue */
   mq = mq_open(IN_QUEUE, O_WRONLY);
 
-  DINT *_pos_arr = malloc(2*MAX_POSARR_LEN*sizeof(DINT));
-  sinfill(_pos_arr, 0, 6400000.0, MAX_POSARR_LEN);//6400000=100000counts/s
-  sinfill(_pos_arr+MAX_POSARR_LEN, 0, 6400000.0, MAX_POSARR_LEN);// 800000=12500counts/s
+  DINT *_sin_pos_arr = malloc(2*MAX_POSARR_LEN*sizeof(DINT));
+  sinfill(_sin_pos_arr, 0, 6400000.0, MAX_POSARR_LEN);//6400000=100000counts/s
+  sinfill(_sin_pos_arr+MAX_POSARR_LEN, 0, 6400000.0, MAX_POSARR_LEN);// 800000=12500counts/s
+
+  DINT *_tri_pos_arr = malloc(2*MAX_POSARR_LEN*sizeof(DINT));
+  trifill(_tri_pos_arr, 0, 6400000.0, MAX_POSARR_LEN);//6400000=100000counts/s
+  trifill(_tri_pos_arr+MAX_POSARR_LEN, 0, 6400000.0, MAX_POSARR_LEN);// 800000=12500counts/s
 
   while (1) {
     //ycoe_csp_fill_posarray (num_slaves, _pos_arr);
-    mq_send(mq, (char *)_pos_arr, 2*MAX_POSARR_LEN*sizeof(DINT), 0);
+    mq_send(mq, (char *)_sin_pos_arr, 2*MAX_POSARR_LEN*sizeof(DINT), 0);
+    sleep(3);// Sleep 3 seconds
+    mq_send(mq, (char *)_tri_pos_arr, 2*MAX_POSARR_LEN*sizeof(DINT), 0);
     sleep(3);// Sleep 3 seconds
   }
-  free(_pos_arr);
+  free(_sin_pos_arr);
+  free(_tri_pos_arr);
   mq_close(mq);
 
   return NULL;
