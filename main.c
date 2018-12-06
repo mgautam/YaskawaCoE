@@ -268,7 +268,7 @@ void *mediator(void *args) {
     printf("Zmq msg Received & Sent!");
     zmq_send(responder, _pos_arr, 12, 0);
   }
-  zmq_close(requester);
+  zmq_close(responder);
   zmq_ctx_destroy(context);
   mq_close(mq);
 

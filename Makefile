@@ -28,6 +28,7 @@ CFLAGS += -O3 -Wall -g
 
 #SOEM EtherCAT
 LDLIBS +=-lm
+LDLIBS +=-lzmq
 LDLIBS += -L./lib
 LDLIBS +=-lsoem
 LDLIBS +=-losal
