@@ -32,7 +32,7 @@
 #include <mqueue.h>
 #define IN_QUEUE  "/ycoe_inbound"
 #define NUM_SLAVES 4
-#define MAX_POSARR_LEN    2500
+#define MAX_POSARR_LEN 3000
 #include <zmq.h>
 
 #define EC_TIMEOUTMON 500

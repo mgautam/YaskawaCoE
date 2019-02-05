@@ -6,14 +6,14 @@
 #include <zmq.h>
 
 #define NUM_SLAVES 4
-#define MAX_POSARR_LEN    2500
+#define MAX_POSARR_LEN 3000
 
 int main(int argc, char *argv[]) {
   int i = 0;
    printf("Send YCOE Position Data program\n");
    DINT *_sin_pos_arr = malloc(NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT));
    for (i=0; i < NUM_SLAVES; i++)
-    sinfill(_sin_pos_arr+i*MAX_POSARR_LEN, 0, 6400000.0, MAX_POSARR_LEN);//6400000=100000counts/s
+    sinfill1(_sin_pos_arr+i*MAX_POSARR_LEN, 0, 6400000.0, 1000, MAX_POSARR_LEN);//6400000=100000counts/s
 
     DINT *_tri_pos_arr = malloc(NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT));
    for (i=0; i < NUM_SLAVES; i++)
@@ -27,11 +27,11 @@ int main(int argc, char *argv[]) {
     {
       zmq_send(requester, (char *)_sin_pos_arr, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), 0);
       zmq_recv(requester,buffer,12,0);
-      sleep(3);// Sleep 3 seconds
+      sleep(6);// Sleep 6 seconds
 
       zmq_send(requester, (char *)_tri_pos_arr, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), 0);
       zmq_recv(requester,buffer,12,0);
-      sleep(3);// Sleep 3 seconds
+      sleep(6);// Sleep 6 seconds
     }
     free(_sin_pos_arr);
     free(_tri_pos_arr);
