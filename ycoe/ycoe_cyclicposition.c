@@ -233,7 +233,7 @@ int ycoe_csp_goto_possync (int slavenum) {
 static DINT **position_array;
 //extern unsigned int period_in_cycles;
 static unsigned int period_in_cycles = 0;
-static int position_index = -1;
+static int position_index[EC_MAXSLAVE] = {-1};
 int ycoe_csp_setup_posarray(int num_slaves, unsigned int max_array_len) {
     position_array = malloc((num_slaves+1) * sizeof(DINT *));
     int i;
@@ -249,28 +249,34 @@ int ycoe_csp_fill_posarray (int num_slaves, int posarr_len, DINT *pos_array) {
       int j;
       for (j=0; j<period_in_cycles; j++)
         position_array[i][j]=*cur_slave_pos + pos_array[(i-1)*period_in_cycles+j];
+
+      // Reset Position Index for Follow_PosArray
+      position_index[i] = 0;
     }
 
-    // Reset Position Index for Follow_PosArray
-    position_index = 0;
 }
-int ycoe_csp_follow_posarray (int num_slaves) {
+int ycoe_csp_follow_posarray (int slaveindex) {
 
-    if (position_index >= 0) {
-      if (position_index < period_in_cycles) {
-        position_index++;
+    if (position_index[slaveindex] >= 0) {
+      if (position_index[slaveindex] < period_in_cycles) {
+        position_index[slaveindex]++;
 
         int i;
-        for (i=1; i<=num_slaves; i++) {
-          DINT *target_position_pdo = (DINT *)(ec_slave[i].outputs+2);
-          *target_position_pdo = position_array[i][position_index];
-        }
-      } else position_index = -1;
+          DINT *target_position_pdo = (DINT *)(ec_slave[slaveindex].outputs+2);
+          *target_position_pdo = position_array[slaveindex][position_index[slaveindex]];
+      } else position_index[slaveindex] = -1;
     }
 
     return 0;
 }
-
+int ycoe_csp_posindicies(int numslaves){
+    int i;
+    printf("Posindices: ");
+    for (i=1; i< numslaves+1; i++)
+       printf("%d ", position_index[i]);
+    printf("\n");
+    return numslaves;
+}
 
 int ycoe_csp_setup_sinarray(int num_slaves, unsigned int samples_per_second, unsigned int period_in_secs) {
   period_in_cycles = samples_per_second * period_in_secs;
@@ -289,19 +295,17 @@ int ycoe_csp_setup_sinarray(int num_slaves, unsigned int samples_per_second, uns
   // The two arrays have to be equal in size
   // also keep in mind the max velocities and accelerations
 
-  position_index = 0;
+  position_index[1] = 0;
+  position_index[2] = 0;
   return 0;
 }
 int ycoe_csp_loop_posarray (int slavenum) {
 
-    position_index++;
-    if (position_index >= period_in_cycles) position_index = 0;
+    position_index[slavenum]++;
+    if (position_index[slavenum] >= period_in_cycles) position_index[slavenum] = 0;
 
-    DINT *target_position_pdo1 = (DINT *)(ec_slave[1].outputs+2);
-    *target_position_pdo1 = position_array[1][position_index];
-
-    DINT *target_position_pdo2 = (DINT *)(ec_slave[2].outputs+2);
-    *target_position_pdo2 = position_array[2][position_index];
+    DINT *target_position_pdo = (DINT *)(ec_slave[slavenum].outputs+2);
+    *target_position_pdo = position_array[slavenum][position_index[slavenum]];
 
     return 0;
 }

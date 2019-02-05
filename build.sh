@@ -1,3 +1,18 @@
+#Install Libsodium
+#cd libsodium-1.0.3/
+#./configure
+#make
+#sudo make install
+#cd ..
+
+#Install Zeromq
+#cd zeromq-4.1.3/
+#./configure
+#make
+#sudo make install
+#sudo ldconfig
+#cd ..
+
 cd osal
 make
 cd ../oshw

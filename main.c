@@ -31,6 +31,7 @@
 #include <pthread.h>
 #include <mqueue.h>
 #define IN_QUEUE  "/ycoe_inbound"
+#define NUM_SLAVES 4
 #define MAX_POSARR_LEN    2500
 #include <zmq.h>
 
@@ -43,7 +44,7 @@ int run=1;
 char guiIOmap[4096];
 int guiIObytes = 0;
 int graphIndex = 44; //4+(4+4+6+6)*2
-int pos_cmd_sem[3] = {0,0,0}; // Position Command Semaphore
+int *pos_cmd_sem; // Position Command Semaphore
 DINT final_position = 0;
 char IOmap[4096];
 int expectedWKC;
@@ -67,12 +68,12 @@ void coeController(void *arg)
     mqd_t mq;
     ssize_t mq_bytes_read;
     struct mq_attr mqattr;
-    char pos_buffer[MAX_POSARR_LEN*sizeof(DINT)*2];
+    char pos_buffer[MAX_POSARR_LEN*sizeof(DINT)*NUM_SLAVES];
 
     /* initialize the queue attributes */
     mqattr.mq_flags = 0;
     mqattr.mq_maxmsg = 10;
-    mqattr.mq_msgsize = MAX_POSARR_LEN*sizeof(DINT)*2;
+    mqattr.mq_msgsize = MAX_POSARR_LEN*sizeof(DINT)*NUM_SLAVES;
     mqattr.mq_curmsgs = 0;
 
     /* create the message queue */
@@ -139,7 +140,9 @@ void coeController(void *arg)
                 rt_printf("Operational state reached for all slaves.\n");
                 inOP = TRUE;
 
-ycoe_csp_setup_posarray(2,MAX_POSARR_LEN);
+ycoe_csp_setup_posarray(ec_slavecount,MAX_POSARR_LEN);
+pos_cmd_sem=malloc(ec_slavecount * sizeof(INT));
+memset(pos_cmd_sem,0,ec_slavecount*sizeof(INT));
                 /* cyclic loop */
 				        cycle_count = 0;
                 rt_task_sleep(1e6);
@@ -153,10 +156,10 @@ ycoe_csp_setup_posarray(2,MAX_POSARR_LEN);
  				          	cycle_count++;
 
                     memset(pos_buffer, 0x00, sizeof(pos_buffer));
-                    mq_bytes_read = mq_receive(mq, pos_buffer, 2*MAX_POSARR_LEN*sizeof(DINT), NULL);
+                    mq_bytes_read = mq_receive(mq, pos_buffer, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), NULL);
                     if(mq_bytes_read >= 0) {
                         printf("SERVER: Received bytes = %d\n", (int)mq_bytes_read);
-                        ycoe_csp_fill_posarray (2, MAX_POSARR_LEN, (DINT *)pos_buffer);
+                        ycoe_csp_fill_posarray (NUM_SLAVES, MAX_POSARR_LEN, (DINT *)pos_buffer);
                     }
 
                     for (islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
@@ -170,16 +173,14 @@ ycoe_csp_setup_posarray(2,MAX_POSARR_LEN);
                             ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
                             pos_cmd_sem[islaveindex] = 1;
                         }
-                    }
 
-                        if (ycoe_checkstatus(1,SW_OP_ENABLED) \
-                              && ycoe_checkstatus(2,SW_OP_ENABLED))
+                        if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
                           {
                               // Add interpolation calculations
                               //ycoe_csp_loop_posarray(islaveindex);
-                              ycoe_csp_follow_posarray(2);
+                              ycoe_csp_follow_posarray(islaveindex);
                           }
-
+                    }
 
                     ec_send_processdata();
                     wkc = ec_receive_processdata(100);//(EC_TIMEOUTRET);
@@ -205,6 +206,7 @@ ycoe_csp_setup_posarray(2,MAX_POSARR_LEN);
                       avg_latency = sum_latency/((float)cycle_count);
                       rt_printf("cycle:%d time:%.5f act:%.5f min:%.5f avg:%.5f max:%.5f\n\r",cycle_count,current_time,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);
                       rt_printf("lcycle:%d time:%.5f act:%.5f min:%.5f avg:%.5f max:%.5f\r\n",cycle_count,current_time,act_latency,min_latency,avg_latency,max_latency);
+                      ycoe_csp_posindicies(ec_slavecount);
                       prev_print_time = current_time;
                       min_cycle_time=999999, max_cycle_time = 0;
                       min_latency=999999, max_latency = 0;
@@ -261,10 +263,10 @@ void *mediator(void *args) {
   void *responder = zmq_socket(context, ZMQ_REP);
   int rc = zmq_bind(responder, "tcp://*:5555");
 
-  DINT _pos_arr[2*MAX_POSARR_LEN]={0};
+  DINT _pos_arr[NUM_SLAVES*MAX_POSARR_LEN]={0};
   while (1) {
-    zmq_recv(responder, (char *)_pos_arr, 2*MAX_POSARR_LEN*sizeof(DINT), 0);
-    mq_send(mq, (char *)_pos_arr, 2*MAX_POSARR_LEN*sizeof(DINT), 0);
+    zmq_recv(responder, (char *)_pos_arr, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), 0);
+    mq_send(mq, (char *)_pos_arr, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), 0);
     printf("Zmq msg Received & Sent!");
     zmq_send(responder, _pos_arr, 12, 0);
   }
