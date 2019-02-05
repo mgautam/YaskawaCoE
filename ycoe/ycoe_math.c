@@ -44,11 +44,11 @@ int trifill1(DINT *array, DINT origin, double height, unsigned int period, unsig
     int i;
     for (i=0; i<period/2; i++) {
       array[i] = origin + (DINT) (slope * (double)i);
-      if ((i < 15)||(i > num_samples-15)) printf("%d->%d ",i,array[i]);
+      if (i < 15) printf("%d->%d ",i,array[i]);
     }
     for (i=period/2; i<period; i++) {
       array[i] = origin + (DINT) (slope * (double)(period-i));
-      //if (i < 15) printf("%d->%d ",i,array[i]);
+      if (i > period-15) printf("%d->%d ",i,array[i]);
     }
 
 
