@@ -44,7 +44,6 @@ int run=1;
 char guiIOmap[4096];
 int guiIObytes = 0;
 int graphIndex = 44; //4+(4+4+6+6)*2
-int *pos_cmd_sem; // Position Command Semaphore
 DINT final_position = 0;
 char IOmap[4096];
 int expectedWKC;
@@ -104,7 +103,6 @@ void coeController(void *arg)
                 ycoe_csp_set_parameters(islaveindex,0,0,1048576,1048576);
                 //ycoe_csp_get_parameters(islaveindex);
             }
-//ycoe_csp_setup_posarray(2,500,5);
 
             /*
                ec_config_map reads PDO mapping and set local buffer for PDO exchange.
@@ -141,8 +139,6 @@ void coeController(void *arg)
                 inOP = TRUE;
 
 ycoe_csp_setup_posarray(ec_slavecount,MAX_POSARR_LEN);
-pos_cmd_sem=malloc(ec_slavecount * sizeof(INT));
-memset(pos_cmd_sem,0,ec_slavecount*sizeof(INT));
                 /* cyclic loop */
 				        cycle_count = 0;
                 rt_task_sleep(1e6);
@@ -169,10 +165,7 @@ memset(pos_cmd_sem,0,ec_slavecount*sizeof(INT));
                         else if(ycoe_checkstatus(islaveindex,SW_RTSO))
                           ycoe_setcontrolword(islaveindex,CW_SWITCHON);
                         else if(ycoe_checkstatus(islaveindex,SW_SWITCHED_ON))
-                        {
-                            ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
-                            pos_cmd_sem[islaveindex] = 1;
-                        }
+                          ycoe_setcontrolword(islaveindex,CW_ENABLEOP);
 
                         if (ycoe_checkstatus(islaveindex,SW_OP_ENABLED))
                           {
@@ -204,8 +197,8 @@ memset(pos_cmd_sem,0,ec_slavecount*sizeof(INT));
                    if (current_time > prev_print_time + 100) {
                       avg_cycle_time = sum_cycle_time/((float)cycle_count);
                       avg_latency = sum_latency/((float)cycle_count);
-                      rt_printf("cycle:%d time:%.5f act:%.5f min:%.5f avg:%.5f max:%.5f\n\r",cycle_count,current_time,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);
-                      rt_printf("lcycle:%d time:%.5f act:%.5f min:%.5f avg:%.5f max:%.5f\r\n",cycle_count,current_time,act_latency,min_latency,avg_latency,max_latency);
+                      //rt_printf("cycle:%d time:%.5f act:%.5f min:%.5f avg:%.5f max:%.5f\n\r",cycle_count,current_time,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);
+                      //rt_printf("lcycle:%d time:%.5f act:%.5f min:%.5f avg:%.5f max:%.5f\r\n",cycle_count,current_time,act_latency,min_latency,avg_latency,max_latency);
                       ycoe_csp_posindicies(ec_slavecount);
                       prev_print_time = current_time;
                       min_cycle_time=999999, max_cycle_time = 0;
