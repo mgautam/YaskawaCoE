@@ -23,18 +23,26 @@ int main(int argc, char *argv[]) {
     void *context = zmq_ctx_new ();
     void *requester = zmq_socket (context, ZMQ_REQ);
     zmq_connect (requester, "tcp://localhost:5555");
+
+
+    i=0;
+    int usleep_time=3000*1000;
+    int usleep_buffer=50*1000;
     while (1)
     {
-
-printf("Send sine\n");
+      i++;
+printf("%d:Send sine\n",i);
       zmq_send(requester, (char *)_sin_pos_arr, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), 0);
       zmq_recv(requester,buffer,12,0);
-      usleep(2981000);// Sleep 6 seconds
+      usleep(usleep_time-usleep_buffer);// Sleep 6 seconds
 
-printf("Send trI\n");
+printf("%d:Send trI\n",i);
       zmq_send(requester, (char *)_tri_pos_arr, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), 0);
       zmq_recv(requester,buffer,12,0);
-      usleep(2981000);// Sleep 6 seconds
+      usleep(usleep_time-usleep_buffer);// Sleep 6 seconds
+
+      if (i%10==0)
+        usleep(usleep_buffer*19);
     }
     free(_sin_pos_arr);
     free(_tri_pos_arr);

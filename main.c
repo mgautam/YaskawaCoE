@@ -31,8 +31,6 @@
 #include <pthread.h>
 #include <mqueue.h>
 #define IN_QUEUE  "/ycoe_inbound"
-#define NUM_SLAVES 4
-#define MAX_POSARR_LEN 3000
 #include <zmq.h>
 
 #define EC_TIMEOUTMON 500
@@ -292,10 +290,17 @@ int main(int argc, char *argv[])
   {
     /* create thread to handle slave error handling in OP */
     /* start cyclic part */
-    rt_task_create(&engine_task, "ycoe_engine", 0, 99, 0 );
+    rt_task_create(&engine_task, "ycoe_engine", 300000000, 99, 0 );
     rt_task_start(&engine_task, &coeController, NULL);
 
+    int ths;
     pthread_t thread1;
+    pthread_attr_t pattr;
+    ths=pthread_attr_init(&pattr);
+    ths=pthread_attr_setstacksize(&pattr, 100000000);
+    if (ths != 0)
+      printf("pthread_attr_setstacksize %d", ths);
+    //pthread_create(&thread1, &pattr, mediator, argv[1]);
     pthread_create(&thread1, NULL, mediator, argv[1]);
 
    while (run)

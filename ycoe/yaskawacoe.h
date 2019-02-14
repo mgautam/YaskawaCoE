@@ -7,5 +7,7 @@
 #include "ycoe_profile_position.h"
 #include "ycoe_interpolation.h"
 #include "ycoe_cyclicposition.h"
+#define NUM_SLAVES 4
+#define MAX_POSARR_LEN 3000
 
 #endif
