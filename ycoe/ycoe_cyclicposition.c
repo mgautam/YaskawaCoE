@@ -276,7 +276,11 @@ int ycoe_csp_fill_posarray (int num_slaves, int posarr_len, DINT *pos_array) {
 
       int j;
       for (j=0; j<period_in_cycles; j++)
+      {
         position_array[fillposarr][i][j]=*cur_slave_pos + pos_array[(i-1)*period_in_cycles+j];
+if (j == 0) printf("%d fill1stPos:%ld\n",i,position_array[fillposarr][i][j]);
+if (j == period_in_cycles-1) printf("%d filllastPos:%ld\n",i,position_array[fillposarr][i][j]);
+      }
 
       prev_slave_pos[fillposarr][i] = *cur_slave_pos;
       // Reset Position Index for Follow_PosArray
@@ -295,13 +299,14 @@ position_index[runposarr][4]<0)
 int ycoe_csp_follow_posarray (int slaveindex) {
     if (position_index[runposarr][slaveindex] >= 0) {
       if (position_index[runposarr][slaveindex] < period_in_cycles) {
+        DINT *target_position_pdo = (DINT *)(ec_slave[slaveindex].outputs+2);
+        *target_position_pdo = position_array[runposarr][slaveindex][position_index[runposarr][slaveindex]];
         position_index[runposarr][slaveindex]++;
 
-        int i;
-          DINT *target_position_pdo = (DINT *)(ec_slave[slaveindex].outputs+2);
-          *target_position_pdo = position_array[runposarr][slaveindex][position_index[runposarr][slaveindex]];
+if (position_index[runposarr][slaveindex] == 1) printf("%d follow1stPos:%ld\n",slaveindex,*target_position_pdo);
+if (position_index[runposarr][slaveindex] == period_in_cycles) printf("%d followlastPos:%ld\n",slaveindex,*target_position_pdo);
       } else {
-        position_index[runposarr][slaveindex] = -1;
+         position_index[runposarr][slaveindex] = -1;
 
 //	printf("Runposarr=%d\n",runposarr);
       }

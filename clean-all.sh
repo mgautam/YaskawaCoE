@@ -8,4 +8,5 @@ cd ../ycoe
 make clean
 cd ..
 make clean
-rm a.out
+rm zmqsend
+rm zmqgateway
