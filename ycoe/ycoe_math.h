@@ -12,4 +12,8 @@ int cosfill(DINT *array, DINT origin, double radius, unsigned int num_samples);
 int trifill1(DINT *array, DINT origin, double height, unsigned int period, unsigned int num_samples);
 int trifill(DINT *array, DINT origin, double height, unsigned int num_samples);
 
+
+int stairfill1(DINT *array, DINT origin, double height, double vel_divider, unsigned int num_stairs, unsigned int num_samples);
+int stairfill(DINT *array, DINT origin, double height, double vel_divider, unsigned int num_stairs, unsigned int num_samples);
+
 #endif

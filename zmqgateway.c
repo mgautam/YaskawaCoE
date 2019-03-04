@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
       for (i=0; i < NUM_SLAVES; i++)
     sinfill1(_pos_arr+i*MAX_POSRCV_LEN, 0, 6400000.0, 1000, MAX_POSRCV_LEN);//6400000=100000counts/s
 */
-
+/*
   // Multi frequency sine profile
     for (i=0; i < NUM_SLAVES; i++)
     {
@@ -30,11 +30,15 @@ int main(int argc, char *argv[]) {
       }
     }
   printf("Sinefill dest:%ld\n",_pos_arr);
-
-/* // Triangular Profile
-  for (i=0; i < NUM_SLAVES; i++)
-    trifill(_pos_arr+i*MAX_POSRCV_LEN, 0, 2000000000.0, MAX_POSRCV_LEN);// 800000=12500counts/s
 */
+/* // Triangular Profile
+for (i=0; i < NUM_SLAVES; i++)
+  trifill(_pos_arr+i*MAX_POSRCV_LEN, 0, 2000000000.0, MAX_POSRCV_LEN);// 800000=12500counts/s
+*/
+ // Staircase Velocity Profile
+  for (i=0; i < NUM_SLAVES; i++) {
+    stairfill(_pos_arr+i*MAX_POSRCV_LEN, 0, 2000000000.0, 0.5, 4, MAX_POSRCV_LEN);// 800000=12500counts/s
+  }
     char buffer[15] = {0};
     void *context = zmq_ctx_new ();
     void *requester = zmq_socket (context, ZMQ_REQ);
