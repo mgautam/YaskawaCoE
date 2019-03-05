@@ -143,6 +143,7 @@ ycoe_csp_setup_posarray(ec_slavecount,MAX_POSARR_LEN);
                 rt_task_set_periodic(NULL, TM_NOW, ECAT_CYCLE_PERIOD);//1ms
                 previous_time = rt_timer_read()/1000000.0;
 
+                unsigned int msg_recv_count = 0;
                 while(run)
                 {
                     rt_task_wait_period(NULL);   //wait for next cycle
@@ -152,7 +153,7 @@ ycoe_csp_setup_posarray(ec_slavecount,MAX_POSARR_LEN);
                     memset(pos_buffer, 0x00, sizeof(pos_buffer));
                     mq_bytes_read = mq_receive(mq, pos_buffer, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), NULL);
                     if(mq_bytes_read >= 0) {
-                        printf("SERVER: Received bytes = %d\n", (int)mq_bytes_read);
+                        printf("RecvMsgCount=%d: Recvdbytes=%d\n", msg_recv_count++, (int)mq_bytes_read);
                         ycoe_csp_fill_posarray (NUM_SLAVES, MAX_POSARR_LEN, (DINT *)pos_buffer);
                     }
 
@@ -252,13 +253,13 @@ void *mediator(void *args) {
   //  Socket to talk to clients
   void *context = zmq_ctx_new();
   void *responder = zmq_socket(context, ZMQ_REP);
-  int rc = zmq_bind(responder, "tcp://*:5555");
+  /*int rc =*/ zmq_bind(responder, "tcp://*:5555");
 
   DINT _pos_arr[NUM_SLAVES*MAX_POSARR_LEN]={0};
   while (1) {
     zmq_recv(responder, (char *)_pos_arr, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), 0);
     mq_send(mq, (char *)_pos_arr, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), 0);
-    printf("Zmq msg Received & Sent!");
+    //printf("Zmq msg Received & Sent!");
     zmq_send(responder, _pos_arr, 12, 0);
   }
   zmq_close(responder);

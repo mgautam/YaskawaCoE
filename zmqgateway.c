@@ -7,7 +7,7 @@
 
 #define NUM_SLAVES 4
 #define DRV_POSARR_LEN 3000
-#define RCV_BUF_MULT 100
+#define RCV_BUF_MULT 1000
 int MAX_POSRCV_LEN = (DRV_POSARR_LEN * RCV_BUF_MULT);
 
 DINT DRV_POSBUF[NUM_SLAVES*DRV_POSARR_LEN] = {0};
@@ -37,7 +37,7 @@ for (i=0; i < NUM_SLAVES; i++)
 */
  // Staircase Velocity Profile
   for (i=0; i < NUM_SLAVES; i++) {
-    stairfill(_pos_arr+i*MAX_POSRCV_LEN, 0, 2000000000.0, 0.5, 4, MAX_POSRCV_LEN);// 800000=12500counts/s
+    stairfill(_pos_arr+i*MAX_POSRCV_LEN, 0, 2140000000.0, 0.5, 100, MAX_POSRCV_LEN);// 800000=12500counts/s
   }
     char buffer[15] = {0};
     void *context = zmq_ctx_new ();
@@ -61,7 +61,7 @@ for (i=0; i < NUM_SLAVES; i++)
         memsrc = _pos_arr+n*MAX_POSRCV_LEN+j*DRV_POSARR_LEN;
         memcpy ( memdest, memsrc, DRV_POSARR_LEN*sizeof(DINT) );
       }
-printf("%d,%d:Relay Gateway - dst:%ld, src:%ld\n",i,j,memdest,memsrc);
+printf("%d,%d:Relay Gateway - dstpos:%ld, src:%ld\n",i,j,*(DINT *)memdest,memsrc);
       zmq_send(requester, (char *)DRV_POSBUF, NUM_SLAVES*DRV_POSARR_LEN*sizeof(DINT), 0);
       zmq_recv(requester,buffer,12,0);
       usleep(usleep_time-usleep_buffer);// Sleep 6 seconds
@@ -74,12 +74,12 @@ printf("%d,%d:Relay Gateway - dst:%ld, src:%ld\n",i,j,memdest,memsrc);
       i++,j++;
       if (i%10==0) {
         usleep(usleep_buffer*9);
-        if (i%100==0) {
+        /*if (i%100==0) {
           usleep(usleep_buffer*9);
           if (i%1000==0) {
             usleep(usleep_buffer*9);
           }
-        }
+        }*/
       }
     }
     free(_pos_arr);

@@ -47,7 +47,7 @@ int trifill1(DINT *array, DINT origin, double relative_height, unsigned int peri
       //if (i < 15) printf("%d->%d ",i,array[i]);
     }
 
-    printf("Trifill: %d\n",num_samples);
+    //printf("Trifill: %d\n",num_samples);
     return 0;
 }
 int trifill(DINT *array, DINT origin, double height, unsigned int num_samples) {
@@ -58,26 +58,45 @@ int trifill(DINT *array, DINT origin, double height, unsigned int num_samples) {
 
 int stairfill1(DINT *array, DINT origin, double height, double vel_divider, unsigned int num_stairs, unsigned int num_samples) {
     int period = num_samples / num_stairs;
-    printf("period=%d\n",period);
+    //printf("period=%d\n",period);
     double max_vel = height / ((double) period);
-    printf("height=%lf,max_vel=%lf\n",height,max_vel);
+    //printf("height=%lf,max_vel=%lf\n",height,max_vel);
     max_vel = max_vel * (1 - vel_divider) / (1 - pow(vel_divider,num_stairs));
-    printf("max_vel=%lf\n",max_vel);
+    //printf("max_vel=%lf\n",max_vel);
 
     int i;
     double new_height;
     DINT new_origin=origin;
     for (i=0; i < num_stairs; i++) {
       new_height = ((double)period) * max_vel * pow(vel_divider,i);
-      printf("%d new_origin=%ld new_height=%lf \n",i,new_origin,new_height);
+      //printf("%d new_origin=%ld new_height=%lf \n",i,new_origin,new_height);
       trifill1(array+i*period, new_origin, new_height, period, period);
       new_origin += (DINT) new_height;
     }
     return 0;
 }
 
+int stairfill2(DINT *array, DINT origin, double height, double vel_divider, unsigned int num_stairs, unsigned int num_samples) {
+    int period = num_samples / num_stairs;
+    //printf("period=%d\n",period);
+    double max_vel = height / ((double) period);
+    //printf("height=%lf,max_vel=%lf\n",height,max_vel);
+    double vel_incr = max_vel* 2.0 / (num_stairs *(num_stairs+1));
+    //printf("vel_incr=%lf\n",vel_incr);
+
+    int i;
+    double new_height;
+    DINT new_origin=origin;
+    for (i=0; i < num_stairs; i++) {
+      new_height = ((double)(period * (i+1)))* vel_incr;
+      //printf("%d new_origin=%ld new_height=%lf \n",i,new_origin,new_height);
+      trifill1(array+i*period, new_origin, new_height, period, period);
+      new_origin += (DINT) new_height;
+    }
+    return 0;
+}
 
 int stairfill(DINT *array, DINT origin, double height, double vel_divider, unsigned int num_stairs, unsigned int num_samples){
-  stairfill1(array, origin, height, vel_divider, num_stairs, num_samples/2);
-  stairfill1(array+(num_samples/2), origin+height, -height, vel_divider, num_stairs, num_samples/2);
+  stairfill2(array, origin, height, vel_divider, num_stairs, num_samples/2);
+  stairfill2(array+(num_samples/2), origin+height, -height, vel_divider, num_stairs, num_samples/2);
 }
