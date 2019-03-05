@@ -7,7 +7,7 @@
 
 #define NUM_SLAVES 4
 #define DRV_POSARR_LEN 3000
-#define RCV_BUF_MULT 1000
+#define RCV_BUF_MULT 10000
 int MAX_POSRCV_LEN = (DRV_POSARR_LEN * RCV_BUF_MULT);
 
 DINT DRV_POSBUF[NUM_SLAVES*DRV_POSARR_LEN] = {0};
@@ -35,10 +35,17 @@ int main(int argc, char *argv[]) {
 for (i=0; i < NUM_SLAVES; i++)
   trifill(_pos_arr+i*MAX_POSRCV_LEN, 0, 2000000000.0, MAX_POSRCV_LEN);// 800000=12500counts/s
 */
- // Staircase Velocity Profile
+/* // staircase velocity profile
+  for (i=0; i < num_slaves; i++) {
+    stairfill(_pos_arr+i*max_posrcv_len, 0, 2140000000.0, 0.5, 100, max_posrcv_len);// 800000=12500counts/s
+  }*/
+ // multi-staircase velocity profile
   for (i=0; i < NUM_SLAVES; i++) {
-    stairfill(_pos_arr+i*MAX_POSRCV_LEN, 0, 2140000000.0, 0.5, 100, MAX_POSRCV_LEN);// 800000=12500counts/s
+    for (j=0; j < 10; j++) {
+      stairfill(_pos_arr+i*MAX_POSRCV_LEN+j*MAX_POSRCV_LEN/10, 0, 2140000000.0, 0.5, 100, MAX_POSRCV_LEN/10);// 800000=12500counts/s
+    }
   }
+
     char buffer[15] = {0};
     void *context = zmq_ctx_new ();
     void *requester = zmq_socket (context, ZMQ_REQ);
