@@ -1,4 +1,4 @@
-
+#include <math.h>
 #include "ycoe_math.h"
 #include <stdio.h>
 #include <unistd.h>
@@ -6,23 +6,49 @@
 #include <zmq.h>
 
 #define NUM_SLAVES 4
-#define MAX_POSARR_LEN 3000
+#define DRV_POSARR_LEN 3000
+#define RCV_BUF_MULT 5000
+int MAX_POSRCV_LEN = (DRV_POSARR_LEN * RCV_BUF_MULT);
 
 int main(int argc, char *argv[]) {
-  int i = 0;
-   printf("Send YCOE Position Data program\n");
-   DINT *_sin_pos_arr = malloc(NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT));
-   for (i=0; i < NUM_SLAVES; i++)
-    sinfill1(_sin_pos_arr+i*MAX_POSARR_LEN, 0, 6400000.0, 1000, MAX_POSARR_LEN);//6400000=100000counts/s
+  int i = 0, j =0;
+  printf("Send YCOE Position Data program\n");
+  DINT *_pos_arr = malloc(NUM_SLAVES*MAX_POSRCV_LEN*sizeof(DINT));
 
-    DINT *_tri_pos_arr = malloc(NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT));
-   for (i=0; i < NUM_SLAVES; i++)
-    trifill(_tri_pos_arr+i*MAX_POSARR_LEN, 0, 6400000.0, MAX_POSARR_LEN);// 800000=12500counts/s
+  /*  // Single frequency sine profile
+      for (i=0; i < NUM_SLAVES; i++)
+    sinfill1(_pos_arr+i*MAX_POSRCV_LEN, 0, 6400000.0, 1000, MAX_POSRCV_LEN);//6400000=100000counts/s
+*/
+/*
+  // Multi frequency sine profile
+    for (i=0; i < NUM_SLAVES; i++)
+    {
+      for (j=0; j < 100; j++) {
+        int k=j%3;
+        sinfill1(_pos_arr+i*MAX_POSRCV_LEN+j*DRV_POSARR_LEN, 0, 6400000.0, 3000/(k+1), DRV_POSARR_LEN);//6400000=100000counts/s
+      }
+    }
+  printf("Sinefill dest:%ld\n",_pos_arr);
+*/
+/* // Triangular Profile
+for (i=0; i < NUM_SLAVES; i++)
+  trifill(_pos_arr+i*MAX_POSRCV_LEN, 0, 2000000000.0, MAX_POSRCV_LEN);// 800000=12500counts/s
+*/
+/* // staircase velocity profile
+  for (i=0; i < num_slaves; i++) {
+    stairfill(_pos_arr+i*max_posrcv_len, 0, 2140000000.0, 0.5, 100, max_posrcv_len);// 800000=12500counts/s
+  }*/
+ // multi-staircase velocity profile
+  for (i=0; i < NUM_SLAVES; i++) {
+    for (j=0; j < 10; j++) {
+      stairfill(_pos_arr+i*MAX_POSRCV_LEN+j*MAX_POSRCV_LEN/10, 0, 2140000000.0, 0.5, 100, MAX_POSRCV_LEN/10);// 800000=12500counts/s
+    }
+  }
 
     char buffer[15] = {0};
     void *context = zmq_ctx_new ();
     void *requester = zmq_socket (context, ZMQ_REQ);
-    zmq_connect (requester, "tcp://localhost:5555");
+    zmq_connect (requester, "tcp://10.1.1.5:6666");
 
 
     i=0;
@@ -30,22 +56,18 @@ int main(int argc, char *argv[]) {
     int usleep_buffer=50*1000;
     while (1)
     {
-      i++;
-printf("%d:Send sine\n",i);
-      zmq_send(requester, (char *)_sin_pos_arr, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), 0);
+      printf("Posdata Prepared!\n");
+      zmq_send(requester, (char *)_pos_arr, NUM_SLAVES*MAX_POSRCV_LEN*sizeof(DINT), 0);
+      printf("Posdata Sent!\n");
       zmq_recv(requester,buffer,12,0);
-      usleep(usleep_time-usleep_buffer);// Sleep 6 seconds
+      printf("Posdata Response recvd!\n");
 
-printf("%d:Send trI\n",i);
-      zmq_send(requester, (char *)_tri_pos_arr, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), 0);
-      zmq_recv(requester,buffer,12,0);
-      usleep(usleep_time-usleep_buffer);// Sleep 6 seconds
-
-      if (i%10==0)
-        usleep(usleep_buffer*19);
+      for (i=0;i<RCV_BUF_MULT;i++) {
+        usleep(usleep_time);// Sleep 6 seconds
+        printf("Sleep count=%d\n", i);
+      }
     }
-    free(_sin_pos_arr);
-    free(_tri_pos_arr);
+    free(_pos_arr);
 
     zmq_close(requester);
     zmq_ctx_destroy(context);

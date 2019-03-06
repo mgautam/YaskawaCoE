@@ -198,7 +198,7 @@ ycoe_csp_setup_posarray(ec_slavecount,MAX_POSARR_LEN);
                       avg_latency = sum_latency/((float)cycle_count);
                       //rt_printf("cycle:%d time:%.5f act:%.5f min:%.5f avg:%.5f max:%.5f\n\r",cycle_count,current_time,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);
                       //rt_printf("lcycle:%d time:%.5f act:%.5f min:%.5f avg:%.5f max:%.5f\r\n",cycle_count,current_time,act_latency,min_latency,avg_latency,max_latency);
-                      ycoe_csp_posindicies(ec_slavecount);
+                      //ycoe_csp_posindicies(ec_slavecount);
                       prev_print_time = current_time;
                       min_cycle_time=999999, max_cycle_time = 0;
                       min_latency=999999, max_latency = 0;
@@ -256,8 +256,17 @@ void *mediator(void *args) {
   /*int rc =*/ zmq_bind(responder, "tcp://*:5555");
 
   DINT _pos_arr[NUM_SLAVES*MAX_POSARR_LEN]={0};
+  int n,k;
   while (1) {
     zmq_recv(responder, (char *)_pos_arr, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), 0);
+
+    for (n=0;n<NUM_SLAVES;n++) {
+    printf("RecvPoss %d:",n);
+    for (k=0;k<5;k++)
+      printf("%ld\t",_pos_arr[k+n*MAX_POSARR_LEN]);
+    printf("\n");
+    }
+
     mq_send(mq, (char *)_pos_arr, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), 0);
     //printf("Zmq msg Received & Sent!");
     zmq_send(responder, _pos_arr, 12, 0);
