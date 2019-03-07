@@ -7,7 +7,7 @@
 
 #define NUM_SLAVES 4
 #define DRV_POSARR_LEN 3000
-#define RCV_BUF_MULT 5000
+#define RCV_BUF_MULT 500
 int MAX_POSRCV_LEN = (DRV_POSARR_LEN * RCV_BUF_MULT);
 
 int main(int argc, char *argv[]) {
@@ -47,7 +47,7 @@ for (i=0; i < NUM_SLAVES; i++)
 */
   unsigned int fillcount,k;
   for (i=0; i < NUM_SLAVES; i++) {
-    fillcount = vapfill(_pos_arr+i*MAX_POSRCV_LEN,0,104857600,10485760,104857600);
+    fillcount = vapfill(_pos_arr+i*MAX_POSRCV_LEN,3,104857600,10485760,104857600);
     for (k=i*MAX_POSRCV_LEN+fillcount;k<(i+1)*MAX_POSRCV_LEN;k++)
       _pos_arr[k]=_pos_arr[fillcount-1];
 

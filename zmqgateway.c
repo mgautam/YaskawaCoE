@@ -7,7 +7,7 @@
 
 #define NUM_SLAVES 4
 #define DRV_POSARR_LEN 3000
-#define RCV_BUF_MULT 5000
+#define RCV_BUF_MULT 500
 int MAX_POSRCV_LEN = (DRV_POSARR_LEN * RCV_BUF_MULT);
 
 DINT DRV_POSBUF[NUM_SLAVES*DRV_POSARR_LEN] = {0};
@@ -33,6 +33,8 @@ int main(int argc, char *argv[]) {
     {
       printf("Posdata Rcvd wait...\n");
       zmq_recv(in_gate, (char *)_pos_arr, NUM_SLAVES*MAX_POSRCV_LEN*sizeof(DINT), 0);
+
+startMsgChunky:
       printf("Posdata Rcvd!bytes=%d\n", NUM_SLAVES*MAX_POSRCV_LEN*sizeof(DINT));
           /*for (n=0;n<NUM_SLAVES;n++) {
           printf("Poss %d:",n);
@@ -64,6 +66,15 @@ int main(int argc, char *argv[]) {
 
           zmq_send(out_gate, (char *)DRV_POSBUF, NUM_SLAVES*DRV_POSARR_LEN*sizeof(DINT), 0);
           zmq_recv(out_gate,buffer,12,0);
+
+          int errrno=zmq_recv(in_gate, (char *)_pos_arr, NUM_SLAVES*MAX_POSRCV_LEN*sizeof(DINT), ZMQ_NOBLOCK);
+          printf("Zmq Errno=%d\n",errrno);
+         if(errrno!=EAGAIN)
+         {
+           usleep(2*usleep_time);
+           goto startMsgChunky;
+         }
+
           usleep(usleep_time-usleep_buffer);// Sleep 6 seconds
 
         if (j%10==0) {
