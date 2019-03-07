@@ -39,11 +39,25 @@ for (i=0; i < NUM_SLAVES; i++)
     stairfill(_pos_arr+i*max_posrcv_len, 0, 2140000000.0, 0.5, 100, max_posrcv_len);// 800000=12500counts/s
   }*/
  // multi-staircase velocity profile
-  for (i=0; i < NUM_SLAVES; i++) {
+/*  for (i=0; i < NUM_SLAVES; i++) {
     for (j=0; j < 10; j++) {
       stairfill(_pos_arr+i*MAX_POSRCV_LEN+j*MAX_POSRCV_LEN/10, 0, 2140000000.0, 0.5, 100, MAX_POSRCV_LEN/10);// 800000=12500counts/s
     }
   }
+*/
+  unsigned int fillcount,k;
+  for (i=0; i < NUM_SLAVES; i++) {
+    fillcount = vapfill(_pos_arr+i*MAX_POSRCV_LEN,0,104857600,10485760,104857600);
+    for (k=i*MAX_POSRCV_LEN+fillcount;k<(i+1)*MAX_POSRCV_LEN;k++)
+      _pos_arr[k]=_pos_arr[fillcount-1];
+
+    printf("LastPos: %ld\n",_pos_arr[fillcount-1]);
+    printf("Poss %d:",i);
+          for (k=0;k<5;k++)
+            printf("%ld\t", _pos_arr[k+i*MAX_POSRCV_LEN+19999]);
+          printf("\n");
+  }
+
 
     char buffer[15] = {0};
     void *context = zmq_ctx_new ();
@@ -54,7 +68,7 @@ for (i=0; i < NUM_SLAVES; i++)
     i=0;
     int usleep_time=3000*1000;
     int usleep_buffer=50*1000;
-    while (1)
+    if (1)
     {
       printf("Posdata Prepared!\n");
       zmq_send(requester, (char *)_pos_arr, NUM_SLAVES*MAX_POSRCV_LEN*sizeof(DINT), 0);

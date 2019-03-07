@@ -100,3 +100,48 @@ int stairfill(DINT *array, DINT origin, double height, double vel_divider, unsig
   stairfill2(array, origin, height, vel_divider, num_stairs, num_samples/2);
   stairfill2(array+(num_samples/2), origin+height, -height, vel_divider, num_stairs, num_samples/2);
 }
+
+int vapfill (DINT *array, DINT origin, double acceleration, double velocity, DINT distance) {
+    double accperms = acceleration/1000000.0;
+    double velperms = velocity/1000.0;
+
+    printf("Apms=%lf, Vpms=%lf\n", accperms, velperms);
+
+    double dist1,dist2;
+    double vba = pow(velocity,2.0)/acceleration;
+    if (distance <= vba) {
+      dist1 = distance/2.0;
+      dist2 = distance/2.0;
+    } else {
+      dist1 = 0.5 * vba;
+      dist2 = distance - dist1;
+    }
+    printf("Dist1=%lf, Dist2=%lf\n",dist1,dist2);
+
+    double tempvel = 0;
+    double currposptr = 0;
+    int i = 0;
+    while (currposptr < dist1) {
+      tempvel += accperms;
+      currposptr += tempvel;
+      array[i++] = (DINT) currposptr;
+      //printf("Fill1 %d= %lf\n",i,currposptr);
+    }
+    while (currposptr < dist2) {
+      currposptr += velperms;
+      array[i++] = (DINT) currposptr;
+      //printf("Fill2 %d= %lf\n",i,currposptr);
+    }
+    printf("Tempvel=%lf\n",tempvel);
+    //tempvel = velperms;
+    while (/*(currposptr < distance) &&*/ (tempvel > 0)){
+      tempvel -= accperms;
+      currposptr += tempvel;
+      array[i++] = (DINT) currposptr;
+      //printf("Fill3 %d= %lf\n",i,currposptr);
+    }
+
+    printf("Vapfill Count = %d\n",i);
+
+    return i;
+}

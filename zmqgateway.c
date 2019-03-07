@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     void *context = zmq_ctx_new ();
     void *in_gate = zmq_socket (context, ZMQ_REP);
     void *out_gate = zmq_socket (context, ZMQ_REQ);
-    zmq_bind (in_gate, "tcp://0.0.0.0:6666");
+    zmq_bind (in_gate, "tcp://*:6666");
     zmq_connect (out_gate, "tcp://localhost:5555");
 
 
@@ -34,11 +34,17 @@ int main(int argc, char *argv[]) {
       printf("Posdata Rcvd wait...\n");
       zmq_recv(in_gate, (char *)_pos_arr, NUM_SLAVES*MAX_POSRCV_LEN*sizeof(DINT), 0);
       printf("Posdata Rcvd!bytes=%d\n", NUM_SLAVES*MAX_POSRCV_LEN*sizeof(DINT));
+          /*for (n=0;n<NUM_SLAVES;n++) {
+          printf("Poss %d:",n);
+          for (k=0;k<5;k++)
+            printf("%ld\t", _pos_arr[k+n*MAX_POSRCV_LEN]);
+          printf("\n");
+          }*/
+
       zmq_send(in_gate, _pos_arr, 12, 0);
       printf("Posdata Response Sent!\n");
       i++,j=0;
       while (j < RCV_BUF_MULT) {
-          j++;
           for (n=0; n< NUM_SLAVES; n++) {
     /*        memdest = ((void *)DRV_POSBUF)+n*DRV_POSARR_LEN*sizeof(DINT);
             memsrc = ((void *)_sin_pos_arr)+((n*MAX_POSRCV_LEN+j*DRV_POSARR_LEN)*sizeof(DINT));
@@ -46,6 +52,7 @@ int main(int argc, char *argv[]) {
             memsrc = _pos_arr+n*MAX_POSRCV_LEN+j*DRV_POSARR_LEN;
             memcpy ( memdest, memsrc, DRV_POSARR_LEN*sizeof(DINT) );
           }
+          j++;//This has to be below the memcpy otherwise it skips first chuck
     printf("%d,%d:Relay Gateway - dstpos:%ld, src:%ld\n",i,j,*(DINT *)memdest,memsrc);
 
           for (n=0;n<NUM_SLAVES;n++) {
@@ -62,9 +69,9 @@ int main(int argc, char *argv[]) {
         if (j%10==0) {
           usleep(usleep_buffer*9);
           if (j%100==0) {
-            usleep(usleep_buffer*6);
+            usleep(usleep_buffer*3);
             if (j%1000==0) {
-              usleep(usleep_buffer*3);
+              usleep(usleep_buffer*1);
             }
           }
         }
