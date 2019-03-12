@@ -45,19 +45,23 @@ for (i=0; i < NUM_SLAVES; i++)
     }
   }
 */
-  unsigned int fillcount,k;
+  unsigned int fillcount, k;
+  DINT maxfillcount=0;
   for (i=0; i < NUM_SLAVES; i++) {
-    fillcount = vapfill(_pos_arr+i*MAX_POSRCV_LEN,3,104857600,10485760,104857600);
+    fillcount = vapfill(_pos_arr+1+i*MAX_POSRCV_LEN,3,104857600,10485760,104857600);
+    if (maxfillcount < fillcount) maxfillcount = fillcount;
     for (k=i*MAX_POSRCV_LEN+fillcount;k<(i+1)*MAX_POSRCV_LEN;k++)
-      _pos_arr[k]=_pos_arr[fillcount-1];
+      _pos_arr[1+k]=_pos_arr[1+fillcount-1];
 
-    printf("LastPos: %ld\n",_pos_arr[fillcount-1]);
+    printf("LastPos: %ld\n",_pos_arr[1+fillcount-1]);
     printf("Poss %d:",i);
           for (k=0;k<5;k++)
-            printf("%ld\t", _pos_arr[k+i*MAX_POSRCV_LEN+19999]);
+            printf("%ld\t", _pos_arr[1+k+i*MAX_POSRCV_LEN+19999]);
           printf("\n");
   }
-
+  _pos_arr[0] = maxfillcount;
+  unsigned int numchunks = (maxfillcount/DRV_POSARR_LEN) + 1;
+  if(numchunks > RCV_BUF_MULT) numchunks = RCV_BUF_MULT;
 
     char buffer[15] = {0};
     void *context = zmq_ctx_new ();
@@ -76,7 +80,7 @@ for (i=0; i < NUM_SLAVES; i++)
       zmq_recv(requester,buffer,12,0);
       printf("Posdata Response recvd!\n");
 
-      for (i=0;i<RCV_BUF_MULT;i++) {
+      for (i=0;i<numchunks;i++) {
         usleep(usleep_time);// Sleep 6 seconds
         printf("Sleep count=%d\n", i);
       }
