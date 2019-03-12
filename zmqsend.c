@@ -13,8 +13,8 @@ int MAX_POSRCV_LEN = (DRV_POSARR_LEN * RCV_BUF_MULT);
 int main(int argc, char *argv[]) {
   int i = 0, j =0;
   printf("Send YCOE Position Data program\n");
-  DINT *_pos_arr = malloc(NUM_SLAVES*MAX_POSRCV_LEN*sizeof(DINT));
-
+  DINT *_posmsg_arr = malloc(NUM_SLAVES*MAX_POSRCV_LEN*sizeof(DINT));
+  DINT *_pos_arr = _posmsg_arr + 1;
   /*  // Single frequency sine profile
       for (i=0; i < NUM_SLAVES; i++)
     sinfill1(_pos_arr+i*MAX_POSRCV_LEN, 0, 6400000.0, 1000, MAX_POSRCV_LEN);//6400000=100000counts/s
@@ -48,18 +48,19 @@ for (i=0; i < NUM_SLAVES; i++)
   unsigned int fillcount, k;
   DINT maxfillcount=0;
   for (i=0; i < NUM_SLAVES; i++) {
-    fillcount = vapfill(_pos_arr+1+i*MAX_POSRCV_LEN,3,104857600,10485760,104857600);
+    //fillcount = vapfill(_pos_arr+i*MAX_POSRCV_LEN,(i+1)*5,104857600,1048576,1048576);
+    fillcount = rpsfill(_pos_arr+i*MAX_POSRCV_LEN,1,100,1,10);
     if (maxfillcount < fillcount) maxfillcount = fillcount;
     for (k=i*MAX_POSRCV_LEN+fillcount;k<(i+1)*MAX_POSRCV_LEN;k++)
-      _pos_arr[1+k]=_pos_arr[1+fillcount-1];
+      _pos_arr[k]=_pos_arr[i*MAX_POSRCV_LEN+fillcount-1];
 
-    printf("LastPos: %ld\n",_pos_arr[1+fillcount-1]);
+    printf("LastPos: %ld\n",_pos_arr[fillcount-1]);
     printf("Poss %d:",i);
           for (k=0;k<5;k++)
-            printf("%ld\t", _pos_arr[1+k+i*MAX_POSRCV_LEN+19999]);
+            printf("%ld\t", _pos_arr[k+i*MAX_POSRCV_LEN+9999]);
           printf("\n");
   }
-  _pos_arr[0] = maxfillcount;
+  _posmsg_arr[0] = maxfillcount;
   unsigned int numchunks = (maxfillcount/DRV_POSARR_LEN) + 1;
   if(numchunks > RCV_BUF_MULT) numchunks = RCV_BUF_MULT;
 
@@ -75,7 +76,7 @@ for (i=0; i < NUM_SLAVES; i++)
     if (1)
     {
       printf("Posdata Prepared!\n");
-      zmq_send(requester, (char *)_pos_arr, NUM_SLAVES*MAX_POSRCV_LEN*sizeof(DINT), 0);
+      zmq_send(requester, (char *)_posmsg_arr, NUM_SLAVES*MAX_POSRCV_LEN*sizeof(DINT), 0);
       printf("Posdata Sent!\n");
       zmq_recv(requester,buffer,12,0);
       printf("Posdata Response recvd!\n");
@@ -85,7 +86,7 @@ for (i=0; i < NUM_SLAVES; i++)
         printf("Sleep count=%d\n", i);
       }
     }
-    free(_pos_arr);
+    free(_posmsg_arr);
 
     zmq_close(requester);
     zmq_ctx_destroy(context);

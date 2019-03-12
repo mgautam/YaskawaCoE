@@ -16,5 +16,6 @@ int trifill(DINT *array, DINT origin, double height, unsigned int num_samples);
 int stairfill1(DINT *array, DINT origin, double height, double vel_divider, unsigned int num_stairs, unsigned int num_samples);
 int stairfill(DINT *array, DINT origin, double height, double vel_divider, unsigned int num_stairs, unsigned int num_samples);
 
-int vapfill (DINT *array, double gr, double acceleration, double velocity, DINT distance);
+unsigned int vapfill (DINT *array, double gr, double acceleration, double velocity, DINT distance);
+unsigned int rpsfill (DINT *array, double gr, double acceleration, double velocity, double distance);
 #endif
