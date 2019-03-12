@@ -1,0 +1,11 @@
+LIBRARY "ycoe_vba"
+EXPORTS
+ycoe_vba_version = ycoe_vba_version
+
+ycoe_connect = ycoe_connect
+ycoe_disconnect = ycoe_disconnect
+
+ycoe_setprofiler = ycoe_setprofiler
+ycoe_getprofiler = ycoe_getprofiler
+
+ycoe_possend = ycoe_possend
