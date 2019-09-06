@@ -31,7 +31,9 @@
 #include <pthread.h>
 #include <mqueue.h>
 #define IN_QUEUE  "/ycoe_inbound"
+#define STAT_QUEUE  "/ycoe_status"
 #include <zmq.h>
+#include "zhelpers.h"
 
 #define EC_TIMEOUTMON 500
 #define ECAT_CYCLE_PERIOD 1000000
@@ -39,9 +41,8 @@
 RT_TASK engine_task;
 int run=1;
 
-char guiIOmap[4096];
-int guiIObytes = 0;
-int graphIndex = 44; //4+(4+4+6+6)*2
+char statusmap[4096];
+int smapcount = 0,smaptimedatasize=8;
 DINT final_position = 0;
 char IOmap[4096];
 int expectedWKC;
@@ -62,19 +63,26 @@ void coeController(void *arg)
     inOP = FALSE;
     int islaveindex;
 
-    mqd_t mq;
-    ssize_t mq_bytes_read;
-    struct mq_attr mqattr;
+    mqd_t ctrlMQ, statMQ;
+    ssize_t ctrlMQbr;// mq bytes read
+    struct mq_attr ctrlMQattr, statMQattr;
+
     char pos_buffer[MAX_POSARR_LEN*sizeof(DINT)*NUM_SLAVES];
 
     /* initialize the queue attributes */
-    mqattr.mq_flags = 0;
-    mqattr.mq_maxmsg = 10;
-    mqattr.mq_msgsize = MAX_POSARR_LEN*sizeof(DINT)*NUM_SLAVES;
-    mqattr.mq_curmsgs = 0;
+    ctrlMQattr.mq_flags = 0;
+    ctrlMQattr.mq_maxmsg = 10;
+    ctrlMQattr.mq_msgsize = MAX_POSARR_LEN*sizeof(DINT)*NUM_SLAVES;
+    ctrlMQattr.mq_curmsgs = 0;
+
+    statMQattr.mq_flags = 0;
+    statMQattr.mq_maxmsg = 10;
+    statMQattr.mq_msgsize = 300;
+    statMQattr.mq_curmsgs = 0;
 
     /* create the message queue */
-    mq = mq_open(IN_QUEUE, O_CREAT | O_RDONLY | O_NONBLOCK, 0644, &mqattr);
+    ctrlMQ = mq_open(IN_QUEUE, O_CREAT | O_RDONLY | O_NONBLOCK, 0644, &ctrlMQattr);
+    statMQ = mq_open(STAT_QUEUE, O_CREAT | O_WRONLY | O_NONBLOCK, 0644, &statMQattr);
 
 
     /* initialise SOEM, bind socket to ifname */
@@ -151,11 +159,11 @@ ycoe_csp_setup_posarray(ec_slavecount,MAX_POSARR_LEN);
  				          	mrcyclecount++,cycle_count++;
 
                     memset(pos_buffer, 0x00, sizeof(pos_buffer));
-                    mq_bytes_read = mq_receive(mq, pos_buffer, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), NULL);
-                    if(mq_bytes_read >= 0) {
+                    ctrlMQbr = mq_receive(ctrlMQ, pos_buffer, NUM_SLAVES*MAX_POSARR_LEN*sizeof(DINT), NULL);
+                    if(ctrlMQbr >= 0) {
                         msg_recv_count++;
                         accmrcyclecount+=mrcyclecount;
-                        printf("RecvMsgCount=%d at cycle=%d, acccycle=%d: Recvdbytes=%d\n", msg_recv_count, mrcyclecount, accmrcyclecount, (int)mq_bytes_read);
+                        printf("RecvMsgCount=%d at cycle=%d, acccycle=%d: Recvdbytes=%d\n", msg_recv_count, mrcyclecount, accmrcyclecount, (int)ctrlMQbr);
                         mrcyclecount=0;
                         ycoe_csp_fill_posarray (NUM_SLAVES, MAX_POSARR_LEN, (DINT *)pos_buffer);
                     }
@@ -207,6 +215,28 @@ ycoe_csp_setup_posarray(ec_slavecount,MAX_POSARR_LEN);
                       min_latency=999999, max_latency = 0;
                       sum_cycle_time = 0, sum_latency = 0;
                       cycle_count = 0;
+
+                      smapcount=0;
+                      memcpy(statusmap,&smaptimedatasize,4); smapcount+=4;
+                      memcpy(statusmap+smapcount,&act_cycle_time,4); smapcount+=4;
+                      memcpy(statusmap+smapcount,&min_cycle_time,4); smapcount+=4;
+                      memcpy(statusmap+smapcount,&max_cycle_time,4); smapcount+=4;
+                      memcpy(statusmap+smapcount,&avg_cycle_time,4); smapcount+=4;
+                      memcpy(statusmap+smapcount,&act_latency,4); smapcount+=4;
+                      memcpy(statusmap+smapcount,&min_latency,4); smapcount+=4;
+                      memcpy(statusmap+smapcount,&max_latency,4); smapcount+=4;
+                      memcpy(statusmap+smapcount,&avg_latency,4); smapcount+=4;
+
+                      memcpy(statusmap+smapcount,&ec_slavecount,4); smapcount+=4;
+                      for (islaveindex = 1; islaveindex <= ec_slavecount; islaveindex++) {
+                        memcpy(statusmap+smapcount,&(ec_slave[islaveindex].Ibytes), 4);smapcount+=4;
+                        memcpy(statusmap+smapcount,&(ec_slave[islaveindex].Obytes), 4);smapcount+=4;
+                        memcpy(statusmap+smapcount,ec_slave[islaveindex].inputs, ec_slave[islaveindex].Ibytes);
+                        smapcount += ec_slave[islaveindex].Ibytes;
+                        memcpy(statusmap+smapcount,ec_slave[islaveindex].outputs, ec_slave[islaveindex].Obytes);
+                        smapcount += ec_slave[islaveindex].Obytes;
+                      }
+                      mq_send(statMQ, (char *)statusmap, 300, 0);
                    }
                    //prev_diff_time = diff_time;
                    previous_time = current_time;
@@ -239,8 +269,10 @@ ycoe_csp_setup_posarray(ec_slavecount,MAX_POSARR_LEN);
         /* stop SOEM, close socket */
         ec_close();
         /* mq cleanup */
-        mq_close(mq);
+        mq_close(ctrlMQ);
+        mq_close(statMQ);
         mq_unlink(IN_QUEUE);
+        mq_unlink(STAT_QUEUE);
     }
     else
     {
@@ -248,7 +280,7 @@ ycoe_csp_setup_posarray(ec_slavecount,MAX_POSARR_LEN);
     }
 }
 
-void *mediator(void *args) {
+void *remotecontrol(void *args) {
   mqd_t mq;
   /* open the mail queue */
   mq = mq_open(IN_QUEUE, O_WRONLY);
@@ -282,6 +314,37 @@ void *mediator(void *args) {
   return NULL;
 }
 
+void *remotestatus(void *args) {
+  mqd_t mq;
+  /* open the mail queue */
+  mq = mq_open(STAT_QUEUE, O_RDONLY);
+  int statMQbr=0,pubcount=0;//mq bytes read
+
+  //  Socket to talk to clients
+  void *context = zmq_ctx_new();
+  void *stspublisher = zmq_socket(context, ZMQ_PUB);
+  /*int rc =*/ zmq_bind(stspublisher, "tcp://*:7777");
+
+  char _stat_map[300]={0};
+  while (1) {
+    statMQbr = mq_receive(mq, _stat_map, 300, NULL);
+    if(statMQbr >= 0) {
+      pubcount++;
+
+      s_sendmore (stspublisher, "YcoeStatus");
+      s_send (stspublisher, "We don't want to see this");
+      s_sendmore (stspublisher, "B");
+      s_send (stspublisher, "We would like to see this");
+    }
+ }
+  zmq_close(stspublisher);
+  zmq_ctx_destroy(context);
+  mq_close(mq);
+
+  return NULL;
+}
+
+
 
 void catch_signal(int sig)
 {
@@ -307,15 +370,16 @@ int main(int argc, char *argv[])
     rt_task_create(&engine_task, "ycoe_engine", 300000000, 99, 0 );
     rt_task_start(&engine_task, &coeController, NULL);
 
-    int ths;
-    pthread_t thread1;
+    int ths;//thread status
+    pthread_t ctrlThread, statThread;
     pthread_attr_t pattr;
     ths=pthread_attr_init(&pattr);
     ths=pthread_attr_setstacksize(&pattr, 100000000);
     if (ths != 0)
       printf("pthread_attr_setstacksize %d", ths);
     //pthread_create(&thread1, &pattr, mediator, argv[1]);
-    pthread_create(&thread1, NULL, mediator, argv[1]);
+    pthread_create(&ctrlThread, NULL, remotecontrol, argv[1]);
+    pthread_create(&statThread, NULL, remotestatus, argv[1]);
 
    while (run)
       sleep(3);// Sleep 3 seconds
