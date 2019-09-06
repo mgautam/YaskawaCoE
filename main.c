@@ -41,8 +41,6 @@
 RT_TASK engine_task;
 int run=1;
 
-char statusmap[4096];
-int smapcount = 0,smaptimedatasize=8;
 DINT final_position = 0;
 char IOmap[4096];
 int expectedWKC;
@@ -67,18 +65,20 @@ void coeController(void *arg)
     ssize_t ctrlMQbr;// mq bytes read
     struct mq_attr ctrlMQattr, statMQattr;
 
-    char pos_buffer[MAX_POSARR_LEN*sizeof(DINT)*NUM_SLAVES];
-
     /* initialize the queue attributes */
     ctrlMQattr.mq_flags = 0;
     ctrlMQattr.mq_maxmsg = 10;
     ctrlMQattr.mq_msgsize = MAX_POSARR_LEN*sizeof(DINT)*NUM_SLAVES;
     ctrlMQattr.mq_curmsgs = 0;
+    char pos_buffer[MAX_POSARR_LEN*sizeof(DINT)*NUM_SLAVES];
 
     statMQattr.mq_flags = 0;
     statMQattr.mq_maxmsg = 10;
     statMQattr.mq_msgsize = 300;
     statMQattr.mq_curmsgs = 0;
+    char statusmap[4096];
+    int smapcount = 0;
+
 
     /* create the message queue */
     ctrlMQ = mq_open(IN_QUEUE, O_CREAT | O_RDONLY | O_NONBLOCK, 0644, &ctrlMQattr);
@@ -122,6 +122,7 @@ void coeController(void *arg)
             /* slave0 is the master. All slaves pdos are mapped to slave0 */
 
             rt_printf("Request operational state for all slaves\n");
+            rt_printf("Ibytes=%d,Obytes=%d\n",ec_slave[1].Ibytes, ec_slave[1].Obytes);
             expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
             rt_printf("Calculated workcounter %d\n", expectedWKC);
             ec_slave[0].state = EC_STATE_OPERATIONAL;
@@ -210,14 +211,11 @@ ycoe_csp_setup_posarray(ec_slavecount,MAX_POSARR_LEN);
                       //rt_printf("cycle:%d time:%.5f act:%.5f min:%.5f avg:%.5f max:%.5f\n\r",cycle_count,current_time,act_cycle_time,min_cycle_time,avg_cycle_time,max_cycle_time);
                       //rt_printf("lcycle:%d time:%.5f act:%.5f min:%.5f avg:%.5f max:%.5f\r\n",cycle_count,current_time,act_latency,min_latency,avg_latency,max_latency);
                       ycoe_csp_posindicies(ec_slavecount);
-                      prev_print_time = current_time;
-                      min_cycle_time=999999, max_cycle_time = 0;
-                      min_latency=999999, max_latency = 0;
-                      sum_cycle_time = 0, sum_latency = 0;
-                      cycle_count = 0;
 
+                      // Status Message Queue
                       smapcount=0;
-                      memcpy(statusmap,&smaptimedatasize,4); smapcount+=4;
+                      memcpy(statusmap+smapcount,&cycle_count,4); smapcount+=4;
+                      memcpy(statusmap+smapcount,&current_time,4); smapcount+=4;
                       memcpy(statusmap+smapcount,&act_cycle_time,4); smapcount+=4;
                       memcpy(statusmap+smapcount,&min_cycle_time,4); smapcount+=4;
                       memcpy(statusmap+smapcount,&max_cycle_time,4); smapcount+=4;
@@ -237,6 +235,14 @@ ycoe_csp_setup_posarray(ec_slavecount,MAX_POSARR_LEN);
                         smapcount += ec_slave[islaveindex].Obytes;
                       }
                       mq_send(statMQ, (char *)statusmap, 300, 0);
+
+
+
+                      prev_print_time = current_time;
+                      min_cycle_time=999999, max_cycle_time = 0;
+                      min_latency=999999, max_latency = 0;
+                      sum_cycle_time = 0, sum_latency = 0;
+                      cycle_count = 0;
                    }
                    //prev_diff_time = diff_time;
                    previous_time = current_time;
@@ -280,13 +286,13 @@ ycoe_csp_setup_posarray(ec_slavecount,MAX_POSARR_LEN);
     }
 }
 
+void *context;
 void *remotecontrol(void *args) {
   mqd_t mq;
   /* open the mail queue */
   mq = mq_open(IN_QUEUE, O_WRONLY);
 
   //  Socket to talk to clients
-  void *context = zmq_ctx_new();
   void *responder = zmq_socket(context, ZMQ_REP);
   /*int rc =*/ zmq_bind(responder, "tcp://*:5555");
 
@@ -308,7 +314,6 @@ void *remotecontrol(void *args) {
     zmq_send(responder, _pos_arr, 12, 0);
   }
   zmq_close(responder);
-  zmq_ctx_destroy(context);
   mq_close(mq);
 
   return NULL;
@@ -321,24 +326,67 @@ void *remotestatus(void *args) {
   int statMQbr=0,pubcount=0;//mq bytes read
 
   //  Socket to talk to clients
-  void *context = zmq_ctx_new();
   void *stspublisher = zmq_socket(context, ZMQ_PUB);
   /*int rc =*/ zmq_bind(stspublisher, "tcp://*:7777");
 
   char _stat_map[300]={0};
+  char _stat_json[1000]={0};
+  int jsoncount, smapcount, numdrives, ibytes, obytes, i, islaveindex;
   while (1) {
     statMQbr = mq_receive(mq, _stat_map, 300, NULL);
     if(statMQbr >= 0) {
       pubcount++;
 
       s_sendmore (stspublisher, "YcoeStatus");
-      s_send (stspublisher, "We don't want to see this");
-      s_sendmore (stspublisher, "B");
-      s_send (stspublisher, "We would like to see this");
+      smapcount=0,jsoncount=0;
+      jsoncount += snprintf(_stat_json,300,"{\"cycle_count\": %d, ", *(int *)_stat_map);smapcount+=4;
+      jsoncount += snprintf(_stat_json+jsoncount,300,"\"runtime\": %f, ",*(float *)(_stat_map+smapcount));smapcount+=4;
+
+      jsoncount += snprintf(_stat_json+jsoncount,300,"\"act_cycle_time\": %f, ",*(float *)(_stat_map+smapcount));smapcount+=4;
+      jsoncount += snprintf(_stat_json+jsoncount,300,"\"min_cycle_time\": %f, ",*(float *)(_stat_map+smapcount));smapcount+=4;
+      jsoncount += snprintf(_stat_json+jsoncount,300,"\"max_cycle_time\": %f, ",*(float *)(_stat_map+smapcount));smapcount+=4;
+      jsoncount += snprintf(_stat_json+jsoncount,300,"\"avg_cycle_time\": %f, ",*(float *)(_stat_map+smapcount));smapcount+=4;
+
+      jsoncount += snprintf(_stat_json+jsoncount,300,"\"act_latency\": %f, ",*(float *)(_stat_map+smapcount));smapcount+=4;
+      jsoncount += snprintf(_stat_json+jsoncount,300,"\"min_latency\": %f, ",*(float *)(_stat_map+smapcount));smapcount+=4;
+      jsoncount += snprintf(_stat_json+jsoncount,300,"\"max_latency\": %f, ",*(float *)(_stat_map+smapcount));smapcount+=4;
+      jsoncount += snprintf(_stat_json+jsoncount,300,"\"avg_latency\": %f, ",*(float *)(_stat_map+smapcount));smapcount+=4;
+
+      memcpy(&numdrives,_stat_map+smapcount,4);
+      jsoncount += snprintf(_stat_json+jsoncount,300,"\"numdrives\": %d, ", numdrives);smapcount+=4;
+      jsoncount += snprintf(_stat_json+jsoncount,300,"\"driveinfo\": [");
+
+      for (islaveindex = 0; islaveindex < numdrives; islaveindex++) {
+          memcpy(&ibytes,_stat_map+smapcount,4);
+          jsoncount += snprintf(_stat_json+jsoncount,300,"{\"ibytes\": %d, ", ibytes);smapcount+=4;
+          memcpy(&obytes,_stat_map+smapcount,4);
+          jsoncount += snprintf(_stat_json+jsoncount,300,"\"obytes\": %d, ", obytes);smapcount+=4;
+
+          jsoncount += snprintf(_stat_json+jsoncount,300,"\"inputs\": [");
+          for ( i=0; i<ibytes; i++) {
+              jsoncount += snprintf(_stat_json+jsoncount,300,"%x, ", *(_stat_map+smapcount));smapcount++;
+          }
+          jsoncount-=2;//remove the last <, >*/
+          jsoncount += snprintf(_stat_json+jsoncount,300,"],");//smapcount+=ibytes;
+
+          jsoncount += snprintf(_stat_json+jsoncount,300,"\"outputs\": [");
+          for ( i=0; i<obytes; i++) {
+              jsoncount += snprintf(_stat_json+jsoncount,300,"%x, ", *(_stat_map+smapcount));smapcount++;
+          }
+          jsoncount-=2;//remove the last <, >*/
+          jsoncount += snprintf(_stat_json+jsoncount,300,"]}");//smapcount+=obytes;
+
+      }
+      jsoncount += snprintf(_stat_json+jsoncount,300,"]");
+      jsoncount += snprintf(_stat_json+jsoncount,300,"}\0");
+
+      //printf("%d:%s\n",jsoncount,_stat_json);
+      s_send (stspublisher, _stat_json);
+      //s_sendmore (stspublisher, "B");
+      //s_send (stspublisher, "We would like to see this");
     }
  }
   zmq_close(stspublisher);
-  zmq_ctx_destroy(context);
   mq_close(mq);
 
   return NULL;
@@ -365,6 +413,7 @@ int main(int argc, char *argv[])
 
   if (argc > 1)
   {
+    context = zmq_ctx_new();
     /* create thread to handle slave error handling in OP */
     /* start cyclic part */
     rt_task_create(&engine_task, "ycoe_engine", 300000000, 99, 0 );
@@ -383,6 +432,7 @@ int main(int argc, char *argv[])
 
    while (run)
       sleep(3);// Sleep 3 seconds
+  zmq_ctx_destroy(context);
   }
   else
   {
