@@ -16,7 +16,7 @@ incremental==17.5.0
 #kivy.deps.sdl2==0.1.17
 Kivy==1.9.1
 Kivy-Garden==0.1.4
-pip==9.0.1
+pip==21.1
 pyasn1==0.4.2
 pyasn1-modules==0.2.1
 pycparser==2.18
